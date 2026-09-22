@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
@@ -140,15 +141,12 @@ def _chat_url(base_url: str) -> str:
     return f"{base}/chat/completions"
 
 
-async def _call_openai_compatible(system: str, user: str, cfg: ProviderConfig) -> str:
-    """Call any OpenAI-compatible /chat/completions endpoint."""
+def _provider_request(system: str, user: str, cfg: ProviderConfig, stream: bool):
     if not cfg.base_url.strip().startswith(("http://", "https://")):
         raise HTTPException(status_code=422, detail="INVALID_BASE_URL")
-
     headers = {"Content-Type": "application/json"}
     if cfg.api_key.strip():
         headers["Authorization"] = f"Bearer {cfg.api_key.strip()}"
-
     payload = {
         "model": cfg.model.strip(),
         "messages": [
@@ -158,22 +156,56 @@ async def _call_openai_compatible(system: str, user: str, cfg: ProviderConfig) -
         "temperature": 0.7,
         "max_tokens": 8000,
     }
+    if stream:
+        payload["stream"] = True
+    return _chat_url(cfg.base_url), headers, payload
+
+
+def _provider_http_error(status_code: int) -> HTTPException:
+    if status_code in (401, 403):
+        return HTTPException(status_code=502, detail="PROVIDER_UNAUTHORIZED")
+    if status_code == 404:
+        return HTTPException(status_code=502, detail="PROVIDER_MODEL_NOT_FOUND")
+    logger.error("Custom provider error %s", status_code)
+    return HTTPException(status_code=502, detail="PROVIDER_REQUEST_FAILED")
+
+
+async def _call_openai_compatible(system: str, user: str, cfg: ProviderConfig) -> str:
+    """Call any OpenAI-compatible /chat/completions endpoint."""
+    url, headers, payload = _provider_request(system, user, cfg, stream=False)
 
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as http:
-        resp = await http.post(_chat_url(cfg.base_url), headers=headers, json=payload)
+        resp = await http.post(url, headers=headers, json=payload)
 
-    if resp.status_code == 401 or resp.status_code == 403:
-        raise HTTPException(status_code=502, detail="PROVIDER_UNAUTHORIZED")
-    if resp.status_code == 404:
-        raise HTTPException(status_code=502, detail="PROVIDER_MODEL_NOT_FOUND")
     if resp.status_code >= 400:
-        logger.error("Custom provider error %s", resp.status_code)
-        raise HTTPException(status_code=502, detail="PROVIDER_REQUEST_FAILED")
+        raise _provider_http_error(resp.status_code)
 
     try:
         return resp.json()["choices"][0]["message"]["content"]
     except Exception:
         raise HTTPException(status_code=502, detail="PROVIDER_BAD_RESPONSE")
+
+
+async def _stream_openai_compatible(system: str, user: str, cfg: ProviderConfig):
+    url, headers, payload = _provider_request(system, user, cfg, stream=True)
+
+    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as http:
+        async with http.stream("POST", url, headers=headers, json=payload) as resp:
+            if resp.status_code >= 400:
+                await resp.aread()
+                raise _provider_http_error(resp.status_code)
+            async for line in resp.aiter_lines():
+                if not line.startswith("data:"):
+                    continue
+                chunk = line[5:].strip()
+                if chunk == "[DONE]":
+                    break
+                try:
+                    delta = json.loads(chunk)["choices"][0]["delta"].get("content")
+                except Exception:
+                    continue
+                if delta:
+                    yield delta
 
 
 @api_router.post("/provider/test")
@@ -188,13 +220,10 @@ async def test_provider(cfg: ProviderConfig):
     return {"ok": True, "model": cfg.model.strip(), "sample": (content or "")[:80]}
 
 
-@api_router.post("/prompt/process", response_model=ProcessResponse)
-async def process_prompt(req: ProcessRequest):
+def _validate(req: ProcessRequest) -> Optional[ProviderConfig]:
     custom = req.provider if (req.provider and req.provider.base_url.strip() and req.provider.model.strip()) else None
-
     if not custom and not LLM_KEY:
         raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
-
     prompt = req.prompt.strip()
     if len(prompt) < 3:
         raise HTTPException(status_code=422, detail="PROMPT_TOO_SHORT")
@@ -202,7 +231,76 @@ async def process_prompt(req: ProcessRequest):
         raise HTTPException(status_code=422, detail="PROMPT_TOO_LONG")
     if len(req.context) > MAX_CONTEXT_CHARS:
         raise HTTPException(status_code=422, detail="CONTEXT_TOO_LONG")
+    return custom
 
+
+_ESCAPES = {"n": "\n", "t": "\t", "r": "\r", '"': '"', "\\": "\\", "/": "/", "b": "\b", "f": "\f"}
+
+
+def _partial_final_prompt(buffer: str) -> str:
+    """Decode the still-incomplete "final_prompt" string value out of a partial JSON buffer."""
+    match = re.search(r'"final_prompt"\s*:\s*"', buffer)
+    if not match:
+        return ""
+    rest = buffer[match.end():]
+    out, i = [], 0
+    while i < len(rest):
+        ch = rest[i]
+        if ch == "\\":
+            if i + 1 >= len(rest):
+                break
+            nxt = rest[i + 1]
+            if nxt == "u":
+                if i + 6 > len(rest):
+                    break
+                try:
+                    out.append(chr(int(rest[i + 2:i + 6], 16)))
+                except ValueError:
+                    pass
+                i += 6
+                continue
+            out.append(_ESCAPES.get(nxt, nxt))
+            i += 2
+            continue
+        if ch == '"':
+            break
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def _build_response(raw: str, used_model: str) -> ProcessResponse:
+    try:
+        data = _extract_json(raw if isinstance(raw, str) else str(raw))
+    except Exception:
+        logger.error("Failed to parse model JSON output")
+        raise HTTPException(status_code=502, detail="AI_BAD_RESPONSE")
+
+    if not data.get("final_prompt"):
+        raise HTTPException(status_code=502, detail="AI_BAD_RESPONSE")
+
+    idx = data.get("recommended_index")
+    return ProcessResponse(
+        final_prompt=str(data.get("final_prompt", "")),
+        explanation=str(data.get("explanation", "") or ""),
+        changes=[str(x) for x in (data.get("changes") or [])],
+        assumptions=[str(x) for x in (data.get("assumptions") or [])],
+        open_questions=[str(x) for x in (data.get("open_questions") or [])],
+        clarifying_questions=[str(x) for x in (data.get("clarifying_questions") or [])][:3],
+        directions=[Direction(**{
+            "title": str(d.get("title", "")),
+            "summary": str(d.get("summary", "")),
+            "benefits": [str(b) for b in (d.get("benefits") or [])],
+            "tradeoffs": [str(t) for t in (d.get("tradeoffs") or [])],
+        }) for d in (data.get("directions") or []) if isinstance(d, dict)],
+        recommended_index=idx if isinstance(idx, int) else None,
+        model=used_model,
+    )
+
+
+@api_router.post("/prompt/process", response_model=ProcessResponse)
+async def process_prompt(req: ProcessRequest):
+    custom = _validate(req)
     system_message = build_system_message(req.mode, req.settings.model_dump())
     user_message = _build_user_message(req)
     used_model = custom.model.strip() if custom else LLM_MODEL
@@ -229,31 +327,63 @@ async def process_prompt(req: ProcessRequest):
             logger.error("LLM request failed: %s", type(exc).__name__)
             raise HTTPException(status_code=502, detail="AI_REQUEST_FAILED")
 
-    try:
-        data = _extract_json(raw if isinstance(raw, str) else str(raw))
-    except Exception:
-        logger.error("Failed to parse model JSON output")
-        raise HTTPException(status_code=502, detail="AI_BAD_RESPONSE")
+    return _build_response(raw, used_model)
 
-    if not data.get("final_prompt"):
-        raise HTTPException(status_code=502, detail="AI_BAD_RESPONSE")
 
-    idx = data.get("recommended_index")
-    return ProcessResponse(
-        final_prompt=str(data.get("final_prompt", "")),
-        explanation=str(data.get("explanation", "") or ""),
-        changes=[str(x) for x in (data.get("changes") or [])],
-        assumptions=[str(x) for x in (data.get("assumptions") or [])],
-        open_questions=[str(x) for x in (data.get("open_questions") or [])],
-        clarifying_questions=[str(x) for x in (data.get("clarifying_questions") or [])][:3],
-        directions=[Direction(**{
-            "title": str(d.get("title", "")),
-            "summary": str(d.get("summary", "")),
-            "benefits": [str(b) for b in (d.get("benefits") or [])],
-            "tradeoffs": [str(t) for t in (d.get("tradeoffs") or [])],
-        }) for d in (data.get("directions") or []) if isinstance(d, dict)],
-        recommended_index=idx if isinstance(idx, int) else None,
-        model=used_model,
+@api_router.post("/prompt/stream")
+async def stream_prompt(req: ProcessRequest):
+    """Server-sent events: streams the final prompt as it is generated, then the full structured result."""
+    custom = _validate(req)
+    system_message = build_system_message(req.mode, req.settings.model_dump())
+    user_message = _build_user_message(req)
+    used_model = custom.model.strip() if custom else LLM_MODEL
+
+    def sse(obj: dict) -> str:
+        return f"data: {json.dumps(obj, ensure_ascii=False)}\n\n"
+
+    async def source():
+        if custom:
+            async for delta in _stream_openai_compatible(system_message, user_message, custom):
+                yield delta
+            return
+
+        from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
+
+        chat = LlmChat(
+            api_key=LLM_KEY,
+            session_id=str(uuid.uuid4()),
+            system_message=system_message,
+        ).with_model(LLM_PROVIDER, LLM_MODEL).with_params(max_tokens=8000)
+
+        async for event in chat.stream_message(UserMessage(text=user_message)):
+            if isinstance(event, TextDelta):
+                yield event.content
+            elif isinstance(event, StreamDone):
+                break
+
+    async def generator():
+        buffer, sent = "", 0
+        try:
+            async for delta in source():
+                buffer += delta
+                visible = _partial_final_prompt(buffer)
+                if len(visible) > sent:
+                    yield sse({"type": "delta", "text": visible[sent:]})
+                    sent = len(visible)
+            result = _build_response(buffer, used_model)
+            yield sse({"type": "result", "data": result.model_dump()})
+        except HTTPException as exc:
+            yield sse({"type": "error", "code": str(exc.detail)})
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.error("Stream failed: %s", type(exc).__name__)
+            yield sse({"type": "error", "code": "AI_REQUEST_FAILED"})
+
+    return StreamingResponse(
+        generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
     )
 
 

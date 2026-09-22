@@ -17,6 +17,45 @@ export const processPrompt = async (payload) => {
   }
 };
 
+export const streamPrompt = async (payload, { onDelta, onResult }) => {
+  const res = await fetch(`${API}/prompt/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok || !res.body) {
+    let code = "NETWORK";
+    try {
+      const body = await res.json();
+      if (typeof body?.detail === "string") code = body.detail;
+    } catch (e) {
+      /* keep NETWORK */
+    }
+    throw new Error(code);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop();
+    for (const frame of frames) {
+      const line = frame.split("\n").find((l) => l.startsWith("data: "));
+      if (!line) continue;
+      const msg = JSON.parse(line.slice(6));
+      if (msg.type === "delta") onDelta(msg.text);
+      else if (msg.type === "result") onResult(msg.data);
+      else if (msg.type === "error") throw new Error(msg.code);
+    }
+  }
+};
+
 export const testProvider = async (provider) => {
   try {
     const { data } = await axios.post(`${API}/provider/test`, provider, { timeout: 60000 });

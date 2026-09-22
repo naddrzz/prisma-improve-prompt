@@ -6,7 +6,7 @@ import { ResultPanel } from "@/components/ResultPanel";
 import { VersionHistory } from "@/components/VersionHistory";
 import { CompareDialog } from "@/components/CompareDialog";
 import { useT } from "@/lib/i18n";
-import { fetchConfig, processPrompt } from "@/lib/api";
+import { fetchConfig, streamPrompt } from "@/lib/api";
 
 const DEFAULT_LIMITS = { max_prompt_chars: 12000, max_context_chars: 6000 };
 
@@ -35,6 +35,7 @@ export default function Studio() {
   const [baselinePrompt, setBaselinePrompt] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [streamText, setStreamText] = useState("");
   const [error, setError] = useState(null);
   const [lastPayload, setLastPayload] = useState(null);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -60,9 +61,21 @@ export default function Studio() {
     async (payload, label) => {
       setLoading(true);
       setError(null);
+      setStreamText("");
       setLastPayload({ payload, label });
+      let streamed = "";
       try {
-        const data = await processPrompt(payload);
+        let data = null;
+        await streamPrompt(payload, {
+          onDelta: (text) => {
+            streamed += text;
+            setStreamText(streamed);
+          },
+          onResult: (d) => {
+            data = d;
+          },
+        });
+        if (!data) throw new Error("AI_BAD_RESPONSE");
         setResult(data);
         setDraft(data.final_prompt);
         setSelectedDirections(
@@ -76,6 +89,7 @@ export default function Studio() {
         setError(e.message);
         toast.error(t.errors[e.message] || t.errorTitle);
       } finally {
+        setStreamText("");
         setLoading(false);
       }
     },
@@ -212,6 +226,7 @@ export default function Studio() {
             draft={draft}
             setDraft={setDraft}
             loading={loading}
+            streamText={streamText}
             error={error}
             onRetry={retry}
             aiConfigured={canRun}

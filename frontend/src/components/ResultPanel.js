@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { BrainstormDirections } from "@/components/BrainstormDirections";
 import { ClarifyingQuestions } from "@/components/ClarifyingQuestions";
+import { StreamingPrompt } from "@/components/StreamingPrompt";
 
 const CHIP_KEYS = [
   { key: "shorter", id: "Buat prompt ini lebih ringkas tanpa menghilangkan batasan yang sudah diterima.", en: "Make this prompt shorter without dropping any already-accepted constraint." },
@@ -28,7 +29,7 @@ const Block = ({ icon: Icon, title, items, color, testid }) =>
   );
 
 export const ResultPanel = ({
-  t, uiLang, result, draft, setDraft, loading, error, onRetry, aiConfigured,
+  t, uiLang, result, draft, setDraft, loading, streamText, error, onRetry, aiConfigured,
   onRefine, onSample, onCompare, selectedDirections, toggleDirection, onUseDirection,
   onCombineDirections, onAnswerQuestions, onSkipQuestions,
 }) => {
@@ -102,13 +103,18 @@ export const ResultPanel = ({
         <div data-testid="loading-state" className="flex flex-col gap-3 pz-rise">
           <div className="relative h-0.5 w-full bg-[#21262D] overflow-hidden rounded-full pz-sweep" />
           <p className="text-xs font-mono text-[#84CC16] flex items-center gap-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t.sharpening}
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {streamText ? t.streaming : t.sharpening}
           </p>
-          <div className="space-y-2">
-            {[1, 0.75, 0.9, 0.6].map((w, i) => (
-              <div key={i} className="h-3 rounded bg-[#21262D]" style={{ width: `${w * 100}%` }} />
-            ))}
-          </div>
+          {streamText ? (
+            <StreamingPrompt text={streamText} />
+          ) : (
+            <div className="space-y-2">
+              {[1, 0.75, 0.9, 0.6].map((w, i) => (
+                <div key={i} className="h-3 rounded bg-[#21262D]" style={{ width: `${w * 100}%` }} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
