@@ -1,6 +1,6 @@
 import { History, RotateCcw } from "lucide-react";
 
-export const VersionHistory = ({ t, versions, activeId, onRestore }) => {
+export const VersionHistory = ({ t, versions, activeId, onRestore, loading }) => {
   if (!versions.length) return null;
 
   return (
@@ -27,6 +27,7 @@ export const VersionHistory = ({ t, versions, activeId, onRestore }) => {
             </div>
             <button
               data-testid={`restore-version-${i}`}
+              disabled={loading}
               onClick={() => onRestore(v)}
               className="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-mono uppercase px-2 py-1 rounded border border-[#30363D] text-[#8B949E] hover:text-[#84CC16] hover:border-[#84CC16]/50 transition-colors"
             >

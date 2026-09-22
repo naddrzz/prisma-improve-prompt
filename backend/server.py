@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 
 from prompts import build_system_message
+from replay import router as replay_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -388,6 +389,7 @@ async def stream_prompt(req: ProcessRequest):
 
 
 app.include_router(api_router)
+app.include_router(replay_router)
 
 app.add_middleware(
     CORSMiddleware,

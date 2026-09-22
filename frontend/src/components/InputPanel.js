@@ -56,6 +56,7 @@ export const InputPanel = ({
       </button>
       <button
         data-testid="clear-button"
+        disabled={loading}
         onClick={onClear}
         className="px-4 py-3.5 rounded-lg border border-[#30363D] text-[#8B949E] hover:text-[#F87171] hover:border-[#F87171]/50 transition-colors"
         title={t.reset}

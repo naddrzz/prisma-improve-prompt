@@ -56,6 +56,16 @@ export const streamPrompt = async (payload, { onDelta, onResult }) => {
   }
 };
 
+export const evaluateReplay = async (payload) => {
+  try {
+    const { data } = await axios.post(`${API}/replay/evaluate`, payload, { timeout: 15000 });
+    return data;
+  } catch (err) {
+    const code = err?.response?.data?.detail;
+    throw new Error(typeof code === "string" ? code : "REPLAY_INVALID");
+  }
+};
+
 export const testProvider = async (provider) => {
   try {
     const { data } = await axios.post(`${API}/provider/test`, provider, { timeout: 60000 });

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="12" time="53.189" timestamp="2026-09-22T06:34:14.387716+00:00" hostname="agent-env-ef8fbd20-5375-48fb-a707-6385e566a9aa"><testcase classname="tests.test_streaming.TestProcessRegression" name="test_auto_detects_indonesian" time="21.610" /><testcase classname="tests.test_streaming.TestProviderTest" name="test_invalid_base_url" time="0.249" /><testcase classname="tests.test_streaming.TestProviderTest" name="test_openai_unauthorized" time="2.099"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">/root/.venv/lib/python3.11/site-packages/requests/models.py:1116: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:355: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+backend/tests/test_streaming.py:147: in test_openai_unauthorized
+    assert r.json()["detail"] == "PROVIDER_UNAUTHORIZED"
+           ^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/models.py:1120: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="tests.test_streaming.TestProviderTest" name="test_incomplete" time="0.133" /><testcase classname="tests.test_streaming.TestStreamValidation" name="test_prompt_too_short" time="0.123" /><testcase classname="tests.test_streaming.TestStreamValidation" name="test_context_too_long" time="0.143" /><testcase classname="tests.test_streaming.TestStreamCustomProvider" name="test_invalid_base_url_returns_422" time="0.122"><failure message="assert 200 == 422&#10; +  where 200 = &lt;Response [200]&gt;.status_code">backend/tests/test_streaming.py:109: in test_invalid_base_url_returns_422
+    assert r.status_code == 422
+E   assert 200 == 422
+E    +  where 200 = &lt;Response [200]&gt;.status_code</failure></testcase><testcase classname="tests.test_streaming.TestStreamCustomProvider" name="test_bogus_openai_key_surfaces_error" time="0.840" /><testcase classname="tests.test_streaming.TestStreamImprove" name="test_improve_streams_deltas_and_result" time="18.004" /><testcase classname="tests.test_streaming.TestProcessRegression" name="test_auto_detects_english" time="16.313" /><testcase classname="tests.test_streaming.TestStreamBrainstorm" name="test_brainstorm_streams_and_returns_3_directions" time="29.578" /><testcase classname="tests.test_streaming.TestProcessRegression" name="test_explicit_id" time="14.780" /></testsuite></testsuites>

@@ -152,6 +152,7 @@ export const ResultPanel = ({
             </div>
             <textarea
               data-testid="final-prompt-output"
+              disabled={loading}
               className="pz-field p-4 text-sm font-mono leading-relaxed min-h-[280px] resize-y pz-scroll"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}

@@ -101,3 +101,46 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  Analyze dream-rsi.pdf thoroughly and apply its methods to Prisma. User approved a practical implementation with in-memory sessions, existing providers, and no further clarification.
+backend:
+  - task: "Dream-RSI bounded historical replay"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/replay.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Stateless /api/replay/evaluate: strict tree validation, prefix-only presets, equation 1, incumbent retention, no LLM calls. Not autonomous policy evolution."
+frontend:
+  - task: "Replay Lab and version trace metadata"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/ReplayLab.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Rating saved versions; separate task worlds; restore snapshots; score table and trajectory; downloadable paper analysis. SSE/copy/download/restore regression needed."
+metadata:
+  created_by: "main_agent"
+  version: "2.0"
+  test_sequence: 2
+  run_ui: true
+test_plan:
+  current_focus:
+    - "Replay equation, legal batching, prefix-only choices, tree and request validation"
+    - "Rating/refine/world splitting and report invalidation, no credential leakage in replay"
+    - "Streaming, copy/download/restore regression, ID/EN, session clear, mobile"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+agent_communication:
+  - agent: "main"
+    message: "See /app/frontend/public/dream-rsi-prisma.md for scope, assumptions and exact API. Existing LLM provider is unchanged and real. Add deterministic regression tests for replay and trace utilities; test at least one actual SSE run and refinement. Do not reproduce scientific benchmarks or retest unrelated initial 11 LLM tests."

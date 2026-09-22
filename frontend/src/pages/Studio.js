@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { InputPanel } from "@/components/InputPanel";
@@ -7,6 +7,8 @@ import { VersionHistory } from "@/components/VersionHistory";
 import { CompareDialog } from "@/components/CompareDialog";
 import { useT } from "@/lib/i18n";
 import { fetchConfig, streamPrompt } from "@/lib/api";
+import { ReplayLab } from "@/components/ReplayLab";
+import { recordVersion } from "@/lib/replay";
 
 const DEFAULT_LIMITS = { max_prompt_chars: 12000, max_context_chars: 6000 };
 
@@ -34,6 +36,8 @@ export default function Studio() {
   const [selectedDirections, setSelectedDirections] = useState([]);
   const [baselinePrompt, setBaselinePrompt] = useState("");
 
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
+  const runningRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [streamText, setStreamText] = useState("");
   const [error, setError] = useState(null);
@@ -58,11 +62,13 @@ export default function Studio() {
   const activeModel = customActive ? provider.model.trim() : config.model;
 
   const run = useCallback(
-    async (payload, label) => {
+    async (payload, label, parentId = activeVersionId) => {
+      if (runningRef.current) return;
+      runningRef.current = true;
       setLoading(true);
       setError(null);
       setStreamText("");
-      setLastPayload({ payload, label });
+      setLastPayload({ payload, label, parentId });
       let streamed = "";
       try {
         let data = null;
@@ -81,7 +87,7 @@ export default function Studio() {
         setSelectedDirections(
           typeof data.recommended_index === "number" ? [data.recommended_index] : []
         );
-        const version = { id: crypto.randomUUID(), label, final_prompt: data.final_prompt, data };
+        const version = recordVersion(versions, payload, data, label, parentId);
         setVersions((v) => [version, ...v].slice(0, 20));
         setActiveVersionId(version.id);
         toast.success(uiLang === "id" ? "Prompt diperbarui" : "Prompt updated");
@@ -90,10 +96,11 @@ export default function Studio() {
         toast.error(t.errors[e.message] || t.errorTitle);
       } finally {
         setStreamText("");
+        runningRef.current = false;
         setLoading(false);
       }
     },
-    [uiLang, t]
+    [uiLang, t, versions, activeVersionId]
   );
 
   const providerPayload = () =>
@@ -116,9 +123,14 @@ export default function Studio() {
       instruction.length > 34 ? `${instruction.slice(0, 34)}…` : instruction
     );
 
-  const retry = () => lastPayload && run(lastPayload.payload, lastPayload.label);
+  const retry = () => lastPayload && run(lastPayload.payload, lastPayload.label, lastPayload.parentId);
 
   const clearAll = () => {
+    if (runningRef.current) return;
+    setSessionId(crypto.randomUUID());
+    setActiveVersionId(null);
+    setLastPayload(null);
+    setCompareOpen(false);
     setPrompt("");
     setContext("");
     setResult(null);
@@ -171,10 +183,22 @@ export default function Studio() {
     );
 
   const restore = (v) => {
+    if (runningRef.current) return;
     setResult(v.data);
     setDraft(v.final_prompt);
+    setPrompt(v.snapshot.prompt);
+    setContext(v.snapshot.context);
+    setMode(v.snapshot.mode);
+    setSettings({ ...v.snapshot.settings });
+    setBaselinePrompt(v.snapshot.prompt);
+    setSelectedDirections(typeof v.data.recommended_index === "number" ? [v.data.recommended_index] : []);
+    setError(null);
     setActiveVersionId(v.id);
     toast.success(uiLang === "id" ? "Versi dipulihkan" : "Version restored");
+  };
+
+  const rateVersion = (id, rating) => {
+    setVersions((items) => items.map((v) => v.id === id ? { ...v, rating } : v));
   };
 
   const limits = useMemo(
@@ -215,7 +239,8 @@ export default function Studio() {
             provider={provider}
             setProvider={setProvider}
           />
-          <VersionHistory t={t} versions={versions} activeId={activeVersionId} onRestore={restore} />
+          <VersionHistory t={t} versions={versions} activeId={activeVersionId} onRestore={restore} loading={loading} />
+          <ReplayLab versions={versions} activeId={activeVersionId} sessionId={sessionId} t={t.replay} loading={loading} draft={draft} onRate={rateVersion} />
         </div>
 
         <div className="lg:col-span-7">
