@@ -1,0 +1,528 @@
+data: {"type": "status", "stage": "generate", "candidate": 1, "calls": 1, "max_calls": 8}
+
+data: {"type": "reset"}
+
+data: {"type": "delta", "text": "Tulis"}
+
+data: {"type": "delta", "text": " s"}
+
+data: {"type": "delta", "text": "atu artikel blog"}
+
+data: {"type": "delta", "text": " pe"}
+
+data: {"type": "delta", "text": "rusahaan tentang k"}
+
+data: {"type": "delta", "text": "ecerdasan buatan ("}
+
+data: {"type": "delta", "text": "AI) dengan"}
+
+data: {"type": "delta", "text": " ket"}
+
+data: {"type": "delta", "text": "ent"}
+
+data: {"type": "delta", "text": "uan be"}
+
+data: {"type": "delta", "text": "rikut:\n\n-"}
+
+data: {"type": "delta", "text": " **"}
+
+data: {"type": "delta", "text": "Topik**:"}
+
+data: {"type": "delta", "text": " Pil"}
+
+data: {"type": "delta", "text": "ih"}
+
+data: {"type": "delta", "text": " s"}
+
+data: {"type": "delta", "text": "atu asp"}
+
+data: {"type": "delta", "text": "ek AI"}
+
+data: {"type": "delta", "text": " yang"}
+
+data: {"type": "delta", "text": " rele"}
+
+data: {"type": "delta", "text": "van b"}
+
+data: {"type": "delta", "text": "agi pemb"}
+
+data: {"type": "delta", "text": "aca bis"}
+
+data: {"type": "delta", "text": "nis ("}
+
+data: {"type": "delta", "text": "cont"}
+
+data: {"type": "delta", "text": "oh: ef"}
+
+data: {"type": "delta", "text": "isiensi oper"}
+
+data: {"type": "delta", "text": "asional, ot"}
+
+data: {"type": "delta", "text": "om"}
+
+data: {"type": "delta", "text": "asi, atau"}
+
+data: {"type": "delta", "text": " t"}
+
+data: {"type": "delta", "text": "ren t"}
+
+data: {"type": "delta", "text": "erk"}
+
+data: {"type": "delta", "text": "ini)"}
+
+data: {"type": "delta", "text": ".\n- **P"}
+
+data: {"type": "delta", "text": "anj"}
+
+data: {"type": "delta", "text": "ang**: "}
+
+data: {"type": "delta", "text": "400"}
+
+data: {"type": "delta", "text": "–"}
+
+data: {"type": "delta", "text": "600 kata."}
+
+data: {"type": "delta", "text": "\n- **N"}
+
+data: {"type": "delta", "text": "ada**: Profes"}
+
+data: {"type": "delta", "text": "ional nam"}
+
+data: {"type": "delta", "text": "un mud"}
+
+data: {"type": "delta", "text": "ah dip"}
+
+data: {"type": "delta", "text": "ahami;"}
+
+data: {"type": "delta", "text": " hind"}
+
+data: {"type": "delta", "text": "ari j"}
+
+data: {"type": "delta", "text": "argon teknis yang"}
+
+data: {"type": "delta", "text": " berlebihan.\n- **"}
+
+data: {"type": "delta", "text": "Struk"}
+
+data: {"type": "delta", "text": "tur**: Ju"}
+
+data: {"type": "delta", "text": "dul m"}
+
+data: {"type": "delta", "text": "enarik, parag"}
+
+data: {"type": "delta", "text": "raf pemb"}
+
+data: {"type": "delta", "text": "uka"}
+
+data: {"type": "delta", "text": " yang"}
+
+data: {"type": "delta", "text": " meng"}
+
+data: {"type": "delta", "text": "ait"}
+
+data: {"type": "delta", "text": " per"}
+
+data: {"type": "delta", "text": "hatian, "}
+
+data: {"type": "delta", "text": "2–3 p"}
+
+data: {"type": "delta", "text": "oin ut"}
+
+data: {"type": "delta", "text": "ama, dan"}
+
+data: {"type": "delta", "text": " penutup"}
+
+data: {"type": "delta", "text": " ber"}
+
+data: {"type": "delta", "text": "upa"}
+
+data: {"type": "delta", "text": " aj"}
+
+data: {"type": "delta", "text": "akan bert"}
+
+data: {"type": "delta", "text": "indak ("}
+
+data: {"type": "delta", "text": "call"}
+
+data: {"type": "delta", "text": " to"}
+
+data: {"type": "delta", "text": " action)"}
+
+data: {"type": "delta", "text": " sing"}
+
+data: {"type": "delta", "text": "kat.\n- **T"}
+
+data: {"type": "delta", "text": "ujuan**: Men"}
+
+data: {"type": "delta", "text": "ged"}
+
+data: {"type": "delta", "text": "ukasi se"}
+
+data: {"type": "delta", "text": "ka"}
+
+data: {"type": "delta", "text": "ligus mem"}
+
+data: {"type": "delta", "text": "bangun kepercayaan pemb"}
+
+data: {"type": "delta", "text": "aca ter"}
+
+data: {"type": "delta", "text": "hadap pe"}
+
+data: {"type": "delta", "text": "rusahaan seb"}
+
+data: {"type": "delta", "text": "agai pem"}
+
+data: {"type": "delta", "text": "ang"}
+
+data: {"type": "delta", "text": "ku kepentingan yang"}
+
+data: {"type": "delta", "text": " mem"}
+
+data: {"type": "delta", "text": "ah"}
+
+data: {"type": "delta", "text": "ami AI"}
+
+data: {"type": "delta", "text": "."}
+
+data: {"type": "status", "stage": "evaluate", "candidate": 1, "calls": 2, "max_calls": 8}
+
+data: {"type": "status", "stage": "generate", "candidate": 2, "calls": 3, "max_calls": 8}
+
+data: {"type": "reset"}
+
+data: {"type": "delta", "text": "Tulis"}
+
+data: {"type": "delta", "text": " satu artikel blog perusah"}
+
+data: {"type": "delta", "text": "aan tentang kecerdasan"}
+
+data: {"type": "delta", "text": " buatan (AI) dengan ket"}
+
+data: {"type": "delta", "text": "entuan berikut:\n"}
+
+data: {"type": "delta", "text": "\n- **Topik"}
+
+data: {"type": "delta", "text": "**: Pilih satu asp"}
+
+data: {"type": "delta", "text": "ek AI yang relevan bagi"}
+
+data: {"type": "delta", "text": " pembaca bisnis (contoh"}
+
+data: {"type": "delta", "text": ": efisiensi operas"}
+
+data: {"type": "delta", "text": "ional, otomasi, atau"}
+
+data: {"type": "delta", "text": " tren terkini)."}
+
+data: {"type": "delta", "text": " Fok"}
+
+data: {"type": "delta", "text": "us pada s"}
+
+data: {"type": "delta", "text": "atu sud"}
+
+data: {"type": "delta", "text": "ut pand"}
+
+data: {"type": "delta", "text": "ang —"}
+
+data: {"type": "delta", "text": " j"}
+
+data: {"type": "delta", "text": "angan menc"}
+
+data: {"type": "delta", "text": "ak"}
+
+data: {"type": "delta", "text": "up t"}
+
+data: {"type": "delta", "text": "erl"}
+
+data: {"type": "delta", "text": "alu banyak subt"}
+
+data: {"type": "delta", "text": "opik.\n- **"}
+
+data: {"type": "delta", "text": "Panjang**: 400–"}
+
+data: {"type": "delta", "text": "600 kata.\n- **"}
+
+data: {"type": "delta", "text": "Nada**: Profesional"}
+
+data: {"type": "delta", "text": " namun mudah dipahami"}
+
+data: {"type": "delta", "text": "; hindari jargon tek"}
+
+data: {"type": "delta", "text": "nis yang berlebihan.\n"}
+
+data: {"type": "delta", "text": "- **Struktur**"}
+
+data: {"type": "delta", "text": ":\n  1"}
+
+data: {"type": "delta", "text": ". Judul yang"}
+
+data: {"type": "delta", "text": " menarik per"}
+
+data: {"type": "delta", "text": "hatian\n  2."}
+
+data: {"type": "delta", "text": " Paragraf pembuka yang lang"}
+
+data: {"type": "delta", "text": "sung rele"}
+
+data: {"type": "delta", "text": "van b"}
+
+data: {"type": "delta", "text": "agi pembaca bisnis\n"}
+
+data: {"type": "delta", "text": "  3. 2–3"}
+
+data: {"type": "delta", "text": " poin utama dengan"}
+
+data: {"type": "delta", "text": " pen"}
+
+data: {"type": "delta", "text": "jelasan sing"}
+
+data: {"type": "delta", "text": "kat\n  4."}
+
+data: {"type": "delta", "text": " Penutup ber"}
+
+data: {"type": "delta", "text": "upa ajakan bertindak ("}
+
+data: {"type": "delta", "text": "call to action) yang"}
+
+data: {"type": "delta", "text": " ring"}
+
+data: {"type": "delta", "text": "kas\n- **T"}
+
+data: {"type": "delta", "text": "ujuan**: Mengeduk"}
+
+data: {"type": "delta", "text": "asi pemb"}
+
+data: {"type": "delta", "text": "aca se"}
+
+data: {"type": "delta", "text": "kaligus mempos"}
+
+data: {"type": "delta", "text": "isikan perusahaan seb"}
+
+data: {"type": "delta", "text": "agai p"}
+
+data: {"type": "delta", "text": "ih"}
+
+data: {"type": "delta", "text": "ak yang memahami dan"}
+
+data: {"type": "delta", "text": " me"}
+
+data: {"type": "delta", "text": "manfaatkan AI sec"}
+
+data: {"type": "delta", "text": "ara bert"}
+
+data: {"type": "delta", "text": "anggung jawab.\n"}
+
+data: {"type": "delta", "text": "- **Hind"}
+
+data: {"type": "delta", "text": "ari**: K"}
+
+data: {"type": "delta", "text": "laim"}
+
+data: {"type": "delta", "text": " ber"}
+
+data: {"type": "delta", "text": "lebihan tent"}
+
+data: {"type": "delta", "text": "ang AI, statist"}
+
+data: {"type": "delta", "text": "ik tan"}
+
+data: {"type": "delta", "text": "pa s"}
+
+data: {"type": "delta", "text": "umber yang"}
+
+data: {"type": "delta", "text": " j"}
+
+data: {"type": "delta", "text": "elas, dan"}
+
+data: {"type": "delta", "text": " bah"}
+
+data: {"type": "delta", "text": "asa yang t"}
+
+data: {"type": "delta", "text": "erlalu prom"}
+
+data: {"type": "delta", "text": "osi."}
+
+data: {"type": "status", "stage": "evaluate", "candidate": 2, "calls": 4, "max_calls": 8}
+
+data: {"type": "status", "stage": "generate", "candidate": 3, "calls": 5, "max_calls": 8}
+
+data: {"type": "reset"}
+
+data: {"type": "delta", "text": "Tulis"}
+
+data: {"type": "delta", "text": " s"}
+
+data: {"type": "delta", "text": "atu artikel blog"}
+
+data: {"type": "delta", "text": " pe"}
+
+data: {"type": "delta", "text": "rusahaan tentang k"}
+
+data: {"type": "delta", "text": "ecerdasan buatan ("}
+
+data: {"type": "delta", "text": "AI) dengan"}
+
+data: {"type": "delta", "text": " ket"}
+
+data: {"type": "delta", "text": "entuan be"}
+
+data: {"type": "delta", "text": "rikut:\n\n-"}
+
+data: {"type": "delta", "text": " **"}
+
+data: {"type": "delta", "text": "Top"}
+
+data: {"type": "delta", "text": "ik**:"}
+
+data: {"type": "delta", "text": " Pil"}
+
+data: {"type": "delta", "text": "ih"}
+
+data: {"type": "delta", "text": " s"}
+
+data: {"type": "delta", "text": "atu asp"}
+
+data: {"type": "delta", "text": "ek AI"}
+
+data: {"type": "delta", "text": " yang rele"}
+
+data: {"type": "delta", "text": "van b"}
+
+data: {"type": "delta", "text": "agi pemb"}
+
+data: {"type": "delta", "text": "aca bis"}
+
+data: {"type": "delta", "text": "nis ("}
+
+data: {"type": "delta", "text": "cont"}
+
+data: {"type": "delta", "text": "oh: ef"}
+
+data: {"type": "delta", "text": "isiensi oper"}
+
+data: {"type": "delta", "text": "asional, ot"}
+
+data: {"type": "delta", "text": "om"}
+
+data: {"type": "delta", "text": "asi, atau"}
+
+data: {"type": "delta", "text": " t"}
+
+data: {"type": "delta", "text": "ren t"}
+
+data: {"type": "delta", "text": "erk"}
+
+data: {"type": "delta", "text": "ini)"}
+
+data: {"type": "delta", "text": ".\n- **P"}
+
+data: {"type": "delta", "text": "anj"}
+
+data: {"type": "delta", "text": "ang**: "}
+
+data: {"type": "delta", "text": "400"}
+
+data: {"type": "delta", "text": "–"}
+
+data: {"type": "delta", "text": "600 kata."}
+
+data: {"type": "delta", "text": "\n- **N"}
+
+data: {"type": "delta", "text": "ada**: Profes"}
+
+data: {"type": "delta", "text": "ional nam"}
+
+data: {"type": "delta", "text": "un mud"}
+
+data: {"type": "delta", "text": "ah dipahami;"}
+
+data: {"type": "delta", "text": " hind"}
+
+data: {"type": "delta", "text": "ari j"}
+
+data: {"type": "delta", "text": "argon teknis yang"}
+
+data: {"type": "delta", "text": " ber"}
+
+data: {"type": "delta", "text": "lebihan.\n- **"}
+
+data: {"type": "delta", "text": "Struk"}
+
+data: {"type": "delta", "text": "tur**: Ju"}
+
+data: {"type": "delta", "text": "dul m"}
+
+data: {"type": "delta", "text": "enarik, parag"}
+
+data: {"type": "delta", "text": "raf pemb"}
+
+data: {"type": "delta", "text": "uka"}
+
+data: {"type": "delta", "text": " yang"}
+
+data: {"type": "delta", "text": " lang"}
+
+data: {"type": "delta", "text": "sung m"}
+
+data: {"type": "delta", "text": "ena"}
+
+data: {"type": "delta", "text": "rik per"}
+
+data: {"type": "delta", "text": "hatian, "}
+
+data: {"type": "delta", "text": "2–3 p"}
+
+data: {"type": "delta", "text": "oin ut"}
+
+data: {"type": "delta", "text": "ama, dan"}
+
+data: {"type": "delta", "text": " pe"}
+
+data: {"type": "delta", "text": "nutup"}
+
+data: {"type": "delta", "text": " dengan"}
+
+data: {"type": "delta", "text": " aj"}
+
+data: {"type": "delta", "text": "akan bert"}
+
+data: {"type": "delta", "text": "indak ("}
+
+data: {"type": "delta", "text": "call"}
+
+data: {"type": "delta", "text": " to"}
+
+data: {"type": "delta", "text": " action)"}
+
+data: {"type": "delta", "text": " sing"}
+
+data: {"type": "delta", "text": "kat.\n- **T"}
+
+data: {"type": "delta", "text": "ujuan**: Men"}
+
+data: {"type": "delta", "text": "ged"}
+
+data: {"type": "delta", "text": "ukasi pembaca se"}
+
+data: {"type": "delta", "text": "ka"}
+
+data: {"type": "delta", "text": "ligus membangun kredibil"}
+
+data: {"type": "delta", "text": "itas pe"}
+
+data: {"type": "delta", "text": "rusahaan di"}
+
+data: {"type": "delta", "text": " bid"}
+
+data: {"type": "delta", "text": "ang AI."}
+
+data: {"type": "status", "stage": "evaluate", "candidate": 3, "calls": 6, "max_calls": 8}
+
+data: {"type": "status", "stage": "replay", "calls": 6, "max_calls": 8}
+
+data: {"type": "status", "stage": "generate", "candidate": 4, "calls": 7, "max_calls": 8}
+
+data: {"type": "reset"}
+
+data: {"type": "error", "code": "AI_REQUEST_FAILED"}
+

@@ -4,6 +4,7 @@ Fixed LLM evaluator and handwritten policy family; no model training or autonomo
 code rewriting. Each request is capped at four generations plus four evaluations.
 """
 import json
+import logging
 import uuid
 from pydantic import BaseModel, Field, ValidationError
 from fastapi import HTTPException
@@ -108,7 +109,14 @@ async def automatic_rsi(*, system, user, history, current_policy, session_id,
             raw_eval += delta
         try:
             evaluation = Evaluation.model_validate(extract_json(raw_eval))
-        except (ValueError, TypeError, ValidationError):
+        except ValidationError as exc:
+            logging.getLogger("prisma").warning(
+                "Evaluator schema rejected: %s",
+                [{"field": list(e["loc"]), "type": e["type"]} for e in exc.errors(include_input=False)],
+            )
+            raise HTTPException(status_code=502, detail="AI_BAD_EVALUATION")
+        except (ValueError, TypeError) as exc:
+            logging.getLogger("prisma").warning("Evaluator JSON rejected: %s; length=%s", type(exc).__name__, len(raw_eval))
             raise HTTPException(status_code=502, detail="AI_BAD_EVALUATION")
         evaluations[node_id] = evaluation
         nodes.append(RecordedNode(id=node_id, parent_id=parent_id, score=evaluation.score))

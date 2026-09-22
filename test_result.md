@@ -143,4 +143,4 @@ test_plan:
   test_priority: "high_first"
 agent_communication:
   - agent: "main"
-    message: "See /app/frontend/public/dream-rsi-prisma.md for scope, assumptions and exact API. Existing LLM provider is unchanged and real. Add deterministic regression tests for replay and trace utilities; test at least one actual SSE run and refinement. Do not reproduce scientific benchmarks or retest unrelated initial 11 LLM tests."
+    message: "PRIORITY BUG: User reports AI_BAD_EVALUATION on the very first generate. No fix applied yet; schema-rejection diagnostics now log field/type only (no prompt text). Reproduction sample encountered a separate transient ChatError on generation D; see evaluator-reproduction.sse. Investigate evaluator type mismatch/truncation and confirm reproduction before fixing. Automatic pipeline now exists in rsi.py; existing deterministic tests were created but interrupted before any final report. No auth."
