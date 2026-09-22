@@ -23,10 +23,10 @@ export const Header = ({ t, uiLang, onToggleLang, model, aiConfigured }) => (
     <div className="flex items-center gap-3 shrink-0">
       <span
         data-testid="model-badge"
-        className="hidden md:inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-md border border-[#30363D] text-[#8B949E]"
+        className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-md border border-[#30363D] text-[#8B949E] max-w-[180px]"
       >
-        <span className={`h-1.5 w-1.5 rounded-full ${aiConfigured ? "bg-[#84CC16]" : "bg-[#F87171]"}`} />
-        {model || "—"}
+        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${aiConfigured ? "bg-[#84CC16]" : "bg-[#F87171]"}`} />
+        <span className="truncate">{model || "—"}</span>
       </span>
       <button
         data-testid="language-toggle"

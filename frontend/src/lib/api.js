@@ -16,3 +16,13 @@ export const processPrompt = async (payload) => {
     throw new Error(typeof code === "string" ? code : "NETWORK");
   }
 };
+
+export const testProvider = async (provider) => {
+  try {
+    const { data } = await axios.post(`${API}/provider/test`, provider, { timeout: 60000 });
+    return data;
+  } catch (err) {
+    const code = err?.response?.data?.detail;
+    throw new Error(typeof code === "string" ? code : "NETWORK");
+  }
+};

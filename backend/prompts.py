@@ -89,13 +89,23 @@ Only include fields with real content; use empty arrays where nothing applies. "
 
 
 def build_system_message(mode: str, settings: dict) -> str:
-    lang = "Indonesian (Bahasa Indonesia)" if settings.get("output_language", "id") == "id" else "English"
+    lang_key = settings.get("output_language", "auto")
+    if lang_key == "id":
+        lang_line = "- Write the final prompt AND all commentary in Indonesian (Bahasa Indonesia)."
+    elif lang_key == "en":
+        lang_line = "- Write the final prompt AND all commentary in English."
+    else:
+        lang_line = (
+            "- Language: AUTO. Detect the language of the submitted prompt and write the final prompt AND all "
+            "commentary in that same language. If the prompt mixes languages, use the dominant one. If the language "
+            "is unclear, default to Indonesian (Bahasa Indonesia)."
+        )
     lens_key = settings.get("lens", "none")
     parts = [
         CORE_SYSTEM,
         MODE_INSTRUCTIONS.get(mode, MODE_INSTRUCTIONS["improve"]),
         "# Output settings",
-        f"- Write the final prompt AND all commentary in {lang}. Preserve technical terms, code, and proper nouns in their original form.",
+        f"{lang_line} Preserve technical terms, code, and proper nouns in their original form.",
         f"- Depth: {settings.get('depth', 'balanced')} (concise = minimal viable prompt; balanced = moderate structure; comprehensive = full structure where it genuinely helps).",
         f"- Target audience of the prompt's output: {settings.get('audience') or 'not specified — infer from context'}.",
         f"- Tone of the produced prompt: {settings.get('tone', 'neutral')}.",

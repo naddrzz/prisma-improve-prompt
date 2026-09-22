@@ -18,13 +18,14 @@ export default function Studio() {
   const [prompt, setPrompt] = useState("");
   const [context, setContext] = useState("");
   const [settings, setSettings] = useState({
-    output_language: "id",
+    output_language: "auto",
     depth: "balanced",
     audience: "",
     tone: "neutral",
     lens: "none",
     lens_strength: "subtle",
   });
+  const [provider, setProvider] = useState({ enabled: false, base_url: "", model: "", api_key: "" });
 
   const [result, setResult] = useState(null);
   const [draft, setDraft] = useState("");
@@ -48,8 +49,12 @@ export default function Studio() {
   const toggleLang = () => {
     const next = uiLang === "id" ? "en" : "id";
     setUiLang(next);
-    setSettings((s) => ({ ...s, output_language: next }));
+    setSettings((s) => (s.output_language === "auto" ? s : { ...s, output_language: next }));
   };
+
+  const customActive = provider.enabled && !!provider.base_url.trim() && !!provider.model.trim();
+  const canRun = config.ai_configured || customActive;
+  const activeModel = customActive ? provider.model.trim() : config.model;
 
   const run = useCallback(
     async (payload, label) => {
@@ -77,18 +82,23 @@ export default function Studio() {
     [uiLang, t]
   );
 
+  const providerPayload = () =>
+    customActive
+      ? { base_url: provider.base_url.trim(), model: provider.model.trim(), api_key: provider.api_key }
+      : null;
+
   const submit = () => {
     if (prompt.trim().length < 3) return;
     setBaselinePrompt(prompt.trim());
     run(
-      { mode, prompt: prompt.trim(), context, settings },
+      { mode, prompt: prompt.trim(), context, settings, provider: providerPayload() },
       t.modes[mode]
     );
   };
 
   const refine = (instruction) =>
     run(
-      { mode, prompt: prompt.trim(), context, settings, instruction, current_result: draft },
+      { mode, prompt: prompt.trim(), context, settings, instruction, current_result: draft, provider: providerPayload() },
       instruction.length > 34 ? `${instruction.slice(0, 34)}…` : instruction
     );
 
@@ -167,8 +177,8 @@ export default function Studio() {
         t={t}
         uiLang={uiLang}
         onToggleLang={toggleLang}
-        model={config.model}
-        aiConfigured={config.ai_configured}
+        model={activeModel}
+        aiConfigured={canRun}
       />
 
       <main className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-8 max-w-[1600px] mx-auto">
@@ -186,8 +196,10 @@ export default function Studio() {
             onSubmit={submit}
             onClear={clearAll}
             loading={loading}
-            aiConfigured={config.ai_configured}
+            aiConfigured={canRun}
             limits={limits}
+            provider={provider}
+            setProvider={setProvider}
           />
           <VersionHistory t={t} versions={versions} activeId={activeVersionId} onRestore={restore} />
         </div>
@@ -202,7 +214,7 @@ export default function Studio() {
             loading={loading}
             error={error}
             onRetry={retry}
-            aiConfigured={config.ai_configured}
+            aiConfigured={canRun}
             onRefine={refine}
             onSample={() => setPrompt(t.sample)}
             onCompare={() => setCompareOpen(true)}

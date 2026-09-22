@@ -7,6 +7,7 @@ import json
 import asyncio
 import logging
 import uuid
+import httpx
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
@@ -32,7 +33,7 @@ api_router = APIRouter(prefix="/api")
 
 
 class Settings(BaseModel):
-    output_language: Literal["id", "en"] = "id"
+    output_language: Literal["auto", "id", "en"] = "auto"
     depth: Literal["concise", "balanced", "comprehensive"] = "balanced"
     audience: str = ""
     tone: str = "neutral"
@@ -45,6 +46,12 @@ class Turn(BaseModel):
     content: str
 
 
+class ProviderConfig(BaseModel):
+    base_url: str = ""
+    model: str = ""
+    api_key: str = ""
+
+
 class ProcessRequest(BaseModel):
     mode: Literal["improve", "refactor", "brainstorm"] = "improve"
     prompt: str
@@ -53,6 +60,7 @@ class ProcessRequest(BaseModel):
     history: List[Turn] = Field(default_factory=list)
     instruction: str = ""
     current_result: str = ""
+    provider: Optional[ProviderConfig] = None
 
 
 class Direction(BaseModel):
@@ -121,12 +129,70 @@ async def get_config():
         "model": LLM_MODEL,
         "max_prompt_chars": MAX_PROMPT_CHARS,
         "max_context_chars": MAX_CONTEXT_CHARS,
+        "supports_custom_provider": True,
     }
+
+
+def _chat_url(base_url: str) -> str:
+    base = base_url.strip().rstrip("/")
+    if base.endswith("/chat/completions"):
+        return base
+    return f"{base}/chat/completions"
+
+
+async def _call_openai_compatible(system: str, user: str, cfg: ProviderConfig) -> str:
+    """Call any OpenAI-compatible /chat/completions endpoint."""
+    if not cfg.base_url.strip().startswith(("http://", "https://")):
+        raise HTTPException(status_code=422, detail="INVALID_BASE_URL")
+
+    headers = {"Content-Type": "application/json"}
+    if cfg.api_key.strip():
+        headers["Authorization"] = f"Bearer {cfg.api_key.strip()}"
+
+    payload = {
+        "model": cfg.model.strip(),
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 0.7,
+        "max_tokens": 8000,
+    }
+
+    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as http:
+        resp = await http.post(_chat_url(cfg.base_url), headers=headers, json=payload)
+
+    if resp.status_code == 401 or resp.status_code == 403:
+        raise HTTPException(status_code=502, detail="PROVIDER_UNAUTHORIZED")
+    if resp.status_code == 404:
+        raise HTTPException(status_code=502, detail="PROVIDER_MODEL_NOT_FOUND")
+    if resp.status_code >= 400:
+        logger.error("Custom provider error %s", resp.status_code)
+        raise HTTPException(status_code=502, detail="PROVIDER_REQUEST_FAILED")
+
+    try:
+        return resp.json()["choices"][0]["message"]["content"]
+    except Exception:
+        raise HTTPException(status_code=502, detail="PROVIDER_BAD_RESPONSE")
+
+
+@api_router.post("/provider/test")
+async def test_provider(cfg: ProviderConfig):
+    if not cfg.base_url.strip() or not cfg.model.strip():
+        raise HTTPException(status_code=422, detail="PROVIDER_INCOMPLETE")
+    content = await _call_openai_compatible(
+        "You are a connectivity probe. Reply with the single word OK.",
+        "Reply with OK.",
+        cfg,
+    )
+    return {"ok": True, "model": cfg.model.strip(), "sample": (content or "")[:80]}
 
 
 @api_router.post("/prompt/process", response_model=ProcessResponse)
 async def process_prompt(req: ProcessRequest):
-    if not LLM_KEY:
+    custom = req.provider if (req.provider and req.provider.base_url.strip() and req.provider.model.strip()) else None
+
+    if not custom and not LLM_KEY:
         raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
 
     prompt = req.prompt.strip()
@@ -137,24 +203,31 @@ async def process_prompt(req: ProcessRequest):
     if len(req.context) > MAX_CONTEXT_CHARS:
         raise HTTPException(status_code=422, detail="CONTEXT_TOO_LONG")
 
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    system_message = build_system_message(req.mode, req.settings.model_dump())
+    user_message = _build_user_message(req)
+    used_model = custom.model.strip() if custom else LLM_MODEL
 
-    chat = LlmChat(
-        api_key=LLM_KEY,
-        session_id=str(uuid.uuid4()),
-        system_message=build_system_message(req.mode, req.settings.model_dump()),
-    ).with_model(LLM_PROVIDER, LLM_MODEL).with_params(max_tokens=8000)
+    if custom:
+        raw = await _call_openai_compatible(system_message, user_message, custom)
+    else:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
 
-    try:
-        raw = await asyncio.wait_for(
-            chat.send_message(UserMessage(text=_build_user_message(req))),
-            timeout=REQUEST_TIMEOUT,
-        )
-    except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="AI_TIMEOUT")
-    except Exception as exc:
-        logger.error("LLM request failed: %s", type(exc).__name__)
-        raise HTTPException(status_code=502, detail="AI_REQUEST_FAILED")
+        chat = LlmChat(
+            api_key=LLM_KEY,
+            session_id=str(uuid.uuid4()),
+            system_message=system_message,
+        ).with_model(LLM_PROVIDER, LLM_MODEL).with_params(max_tokens=8000)
+
+        try:
+            raw = await asyncio.wait_for(
+                chat.send_message(UserMessage(text=user_message)),
+                timeout=REQUEST_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="AI_TIMEOUT")
+        except Exception as exc:
+            logger.error("LLM request failed: %s", type(exc).__name__)
+            raise HTTPException(status_code=502, detail="AI_REQUEST_FAILED")
 
     try:
         data = _extract_json(raw if isinstance(raw, str) else str(raw))
@@ -180,6 +253,7 @@ async def process_prompt(req: ProcessRequest):
             "tradeoffs": [str(t) for t in (d.get("tradeoffs") or [])],
         }) for d in (data.get("directions") or []) if isinstance(d, dict)],
         recommended_index=idx if isinstance(idx, int) else None,
+        model=used_model,
     )
 
 

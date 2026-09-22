@@ -1,0 +1,25 @@
+{
+  "summary": "Full backend + frontend test of Prisma. 11/11 pytest cases pass (config, validation limits, improve id/en, refactor constraint preservation, brainstorm 3 directions, lens differences, follow-up constraint preservation). Frontend flows all pass: workspace loads straight, AGI disclaimer + model badge visible, language toggle flips UI + output_language setting, settings drawer exposes all fields incl. lens strength when lens != none, Improve happy-path (try-sample -> sharpen -> final-prompt-output populated, explanation shown), editing textarea triggers Diedit badge, Compare dialog opens with original vs refined, version history records runs, restore works, Brainstorm mode returns 3 direction cards with Recommended badge, use-direction-1 triggers a new run producing a refined final prompt. Error path (context > 6000 chars) shows error-state while preserving prompt input and last final prompt. Mobile 390x844 stacks panels without horizontal overflow.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_prisma_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Header model-badge is hidden on <md screens (hidden md:inline-flex). Requirement says the header must show the model badge — currently mobile users don't see it. Consider showing at least a compact indicator on mobile.",
+    "context-input has maxLength=6000 so the CONTEXT_TOO_LONG 422 path is effectively unreachable via normal UI typing; only paste beyond limit is stopped. Not a bug, but the validation branch is only exercised via API.",
+    "processPrompt errors map to translated strings via e.message; ensure /app/frontend/src/lib/api.js normalizes backend HTTPException 'detail' string into the message. Verified in practice (error toast + error-state rendered correctly)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_prisma_api.py"
+  ],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% (all reviewed flows)"},
+  "test_credentials": "n/a (no auth)",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend pytest at /app/backend/tests/test_prisma_api.py runs in ~2 min (10 LLM calls via anthropic claude-sonnet-4-6). Playwright covers Improve, Brainstorm, refine, compare, versioning, language toggle, error resilience, mobile. If retesting, respect LLM latency: sharpen waits up to 120s. When testing version-item-N after a refine chip, wait for loading-state to detach (not just wait_for_selector on textarea, which already exists) — this is a test-script gotcha, not a bug.",
+  "rca of the issue": "n/a — no defects found"
+}

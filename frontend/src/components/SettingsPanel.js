@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { toast } from "sonner";
+import { ChevronDown, SlidersHorizontal, Server, Loader2, PlugZap } from "lucide-react";
+import { testProvider } from "@/lib/api";
 
 const Field = ({ label, children }) => (
   <div className="flex flex-col gap-1.5">
@@ -10,9 +12,34 @@ const Field = ({ label, children }) => (
 
 const select = "pz-field px-3 py-2 text-sm w-full appearance-none cursor-pointer";
 
-export const SettingsPanel = ({ t, settings, onChange }) => {
+export const SettingsPanel = ({ t, settings, onChange, provider, onProviderChange }) => {
   const [open, setOpen] = useState(false);
+  const [testing, setTesting] = useState(false);
   const set = (k) => (e) => onChange({ ...settings, [k]: e.target.value });
+  const setP = (k) => (e) => onProviderChange({ ...provider, [k]: e.target.value });
+
+  const runTest = async () => {
+    if (!provider.base_url.trim() || !provider.model.trim()) {
+      toast.error(t.customIncomplete);
+      return;
+    }
+    setTesting(true);
+    try {
+      const res = await testProvider({
+        base_url: provider.base_url,
+        model: provider.model,
+        api_key: provider.api_key,
+      });
+      toast.success(`${t.testOk} · ${res.model}`);
+    } catch (e) {
+      toast.error(`${t.testFail}: ${t.errors[e.message] || e.message}`);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const langLabel =
+    settings.output_language === "auto" ? "AUTO" : settings.output_language.toUpperCase();
 
   return (
     <div className="border border-[#30363D] rounded-xl bg-[#0D1117] overflow-hidden">
@@ -27,7 +54,7 @@ export const SettingsPanel = ({ t, settings, onChange }) => {
         </span>
         <span className="flex items-center gap-2">
           <span className="text-[10px] font-mono uppercase text-[#84CC16]">
-            {settings.output_language.toUpperCase()} · {t.lenses[settings.lens]}
+            {langLabel} · {t.lenses[settings.lens]}
           </span>
           <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
         </span>
@@ -37,6 +64,7 @@ export const SettingsPanel = ({ t, settings, onChange }) => {
         <div data-testid="settings-body" className="px-4 pb-4 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-4 pz-rise">
           <Field label={t.outputLanguage}>
             <select data-testid="setting-output-language" className={select} value={settings.output_language} onChange={set("output_language")}>
+              <option value="auto">{t.langAuto}</option>
               <option value="id">Bahasa Indonesia</option>
               <option value="en">English</option>
             </select>
@@ -89,6 +117,71 @@ export const SettingsPanel = ({ t, settings, onChange }) => {
               </div>
             </Field>
           )}
+
+          <div className="sm:col-span-2 border-t border-[#30363D] pt-4 mt-1">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-semibold text-[#F0F6FC] flex items-center gap-2">
+                <Server className="h-3.5 w-3.5 text-[#38BDF8]" />
+                {t.customProvider}
+              </span>
+              <button
+                data-testid="custom-provider-toggle"
+                onClick={() => onProviderChange({ ...provider, enabled: !provider.enabled })}
+                className={`relative h-5 w-9 rounded-full transition-colors ${provider.enabled ? "bg-[#84CC16]" : "bg-[#30363D]"}`}
+                aria-label={t.enableCustom}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-[#0D1117] transition-all ${provider.enabled ? "left-[1.15rem]" : "left-0.5"}`}
+                />
+              </button>
+            </div>
+            <p className="text-[10px] text-[#6E7681] mt-2 leading-relaxed">{t.customProviderHint}</p>
+
+            {provider.enabled && (
+              <div data-testid="custom-provider-fields" className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pz-rise">
+                <Field label={t.baseUrl}>
+                  <input
+                    data-testid="provider-base-url"
+                    className="pz-field px-3 py-2 text-sm w-full font-mono"
+                    placeholder={t.baseUrlPlaceholder}
+                    value={provider.base_url}
+                    onChange={setP("base_url")}
+                  />
+                </Field>
+                <Field label={t.modelId}>
+                  <input
+                    data-testid="provider-model-id"
+                    className="pz-field px-3 py-2 text-sm w-full font-mono"
+                    placeholder={t.modelIdPlaceholder}
+                    value={provider.model}
+                    onChange={setP("model")}
+                  />
+                </Field>
+                <Field label={t.apiKey}>
+                  <input
+                    data-testid="provider-api-key"
+                    type="password"
+                    autoComplete="off"
+                    className="pz-field px-3 py-2 text-sm w-full font-mono"
+                    placeholder={t.apiKeyPlaceholder}
+                    value={provider.api_key}
+                    onChange={setP("api_key")}
+                  />
+                </Field>
+                <div className="flex items-end">
+                  <button
+                    data-testid="test-provider-button"
+                    onClick={runTest}
+                    disabled={testing}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#38BDF8]/50 text-xs font-semibold text-[#38BDF8] hover:bg-[#38BDF8]/10 disabled:opacity-50 transition-colors"
+                  >
+                    {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlugZap className="h-3.5 w-3.5" />}
+                    {testing ? t.testing : t.testConnection}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

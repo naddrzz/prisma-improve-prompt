@@ -5,6 +5,7 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 export const InputPanel = ({
   t, mode, onModeChange, prompt, setPrompt, context, setContext,
   settings, setSettings, onSubmit, onClear, loading, aiConfigured, limits,
+  provider, setProvider,
 }) => (
   <div data-testid="input-panel" className="pz-panel p-5 flex flex-col gap-5 h-fit lg:sticky lg:top-24">
     <ModeSelector t={t} mode={mode} onChange={onModeChange} />
@@ -41,7 +42,7 @@ export const InputPanel = ({
       />
     </div>
 
-    <SettingsPanel t={t} settings={settings} onChange={setSettings} />
+    <SettingsPanel t={t} settings={settings} onChange={setSettings} provider={provider} onProviderChange={setProvider} />
 
     <div className="flex items-center gap-3">
       <button
