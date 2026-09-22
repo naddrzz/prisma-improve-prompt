@@ -1,0 +1,97 @@
+{
+  "project_name": "Prisma — Prompt Intelligence Studio",
+  "app_type": "saas_app",
+  "archetype": "Swiss High-Contrast & Electric Neon Precision Studio",
+  "language_support": {
+    "default_language": "id",
+    "languages": ["id", "en"],
+    "toggle_location": "Header top right"
+  },
+  "colors": {
+    "background_primary": "#0D1117",
+    "background_secondary": "#161B22",
+    "background_tertiary": "#21262D",
+    "surface_card": "#161B22",
+    "surface_card_hover": "#1C2128",
+    "surface_border": "#30363D",
+    "surface_border_active": "#84CC16",
+    "electric_lime": "#84CC16",
+    "electric_lime_hover": "#A3E635",
+    "electric_lime_glow": "rgba(132, 204, 22, 0.25)",
+    "text_primary": "#F0F6FC",
+    "text_secondary": "#8B949E",
+    "text_muted": "#6E7681",
+    "text_inverse": "#0D1117",
+    "accent_blue": "#38BDF8",
+    "accent_purple": "#C084FC",
+    "accent_amber": "#FBBF24",
+    "accent_red": "#F87171"
+  },
+  "typography": {
+    "heading_font": "Outfit, Plus Jakarta Sans, sans-serif",
+    "body_font": "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+    "code_font": "JetBrains Mono, Fira Code, Source Code Pro, monospace",
+    "scale": {
+      "h1": "text-2xl sm:text-3xl font-bold tracking-tight text-[#F0F6FC]",
+      "h2": "text-xl sm:text-2xl font-semibold tracking-tight text-[#F0F6FC]",
+      "h3": "text-lg font-medium text-[#F0F6FC]",
+      "body": "text-sm text-[#8B949E] leading-relaxed",
+      "body_highlight": "text-sm text-[#F0F6FC]",
+      "caption": "text-xs text-[#6E7681] font-mono",
+      "badge": "text-xs font-semibold px-2.5 py-1 rounded-md uppercase tracking-wider font-mono"
+    }
+  },
+  "layout": {
+    "header": "h-16 border-b border-[#30363D] bg-[#0D1117]/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-50",
+    "main_grid": "grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-6 max-w-[1600px] mx-auto min-h-[calc(100vh-4rem)]",
+    "left_panel": "lg:col-span-5 flex flex-col gap-4 bg-[#161B22] border border-[#30363D] rounded-xl p-5 shadow-xl",
+    "right_panel": "lg:col-span-7 flex flex-col gap-4 bg-[#161B22] border border-[#30363D] rounded-xl p-5 shadow-xl min-h-[600px]"
+  },
+  "components": {
+    "mode_selector": {
+      "container": "inline-flex bg-[#0D1117] p-1 rounded-lg border border-[#30363D]",
+      "item": "px-4 py-2 rounded-md text-sm font-medium transition-all duration-150 cursor-pointer flex items-center gap-2",
+      "active": "bg-[#84CC16] text-[#0D1117] font-semibold shadow-[0_0_15px_rgba(132,204,22,0.3)]",
+      "inactive": "text-[#8B949E] hover:text-[#F0F6FC] hover:bg-[#21262D]"
+    },
+    "primary_action_button": {
+      "class": "w-full py-3.5 px-6 bg-[#84CC16] hover:bg-[#A3E635] text-[#0D1117] font-bold text-base rounded-lg transition-all shadow-[0_0_20px_rgba(132,204,22,0.25)] hover:shadow-[0_0_25px_rgba(163,230,53,0.4)] flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]",
+      "label_id": "Pertajam Prompt",
+      "label_en": "Sharpen Prompt"
+    },
+    "brainstorm_cards": {
+      "container": "grid grid-cols-1 md:grid-cols-3 gap-3 my-4",
+      "card": "border border-[#30363D] bg-[#0D1117] rounded-lg p-4 flex flex-col justify-between hover:border-[#84CC16]/60 transition-all cursor-pointer relative",
+      "card_selected": "border-[#84CC16] bg-[#84CC16]/5 ring-1 ring-[#84CC16]",
+      "recommended_badge": "bg-[#84CC16]/20 text-[#84CC16] text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border border-[#84CC16]/30"
+    },
+    "philosophical_lens": {
+      "options": ["None", "Socratic", "First principles", "Epistemic humility", "Pragmatism", "Systems thinking"],
+      "strengths": ["subtle", "explicit"]
+    },
+    "refinement_chips": {
+      "chip": "px-3 py-1.5 rounded-full text-xs font-medium border border-[#30363D] bg-[#0D1117] text-[#8B949E] hover:text-[#84CC16] hover:border-[#84CC16]/50 transition-all cursor-pointer flex items-center gap-1.5"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build the complete working application for Prisma — Prompt Intelligence Studio with JavaScript (.js/jsx) files in /app/frontend/src/.",
+    "Default the interface language to Indonesian ('id') with instant toggle to English ('en') in the Header.",
+    "Implement the 3 core modes: Improve (Pertajam), Refactor (Restrukturisasi), and Brainstorm (Eksplorasi Ide).",
+    "In Brainstorm mode, display 3 distinct direction cards with tradeoffs, key benefits, recommended badge, and individual select/combine actions.",
+    "Implement server-side/API integration for prompt sharpening with fallback/in-memory AGI reasoning simulation if backend AI service is initializing.",
+    "Add philosophical lens dropdown (None, Socratic, First Principles, Epistemic Humility, Pragmatism, Systems Thinking) with strength slider/toggle (Subtle / Explicit).",
+    "Add expandable Settings drawer for output language, depth, target audience, tone, and lens strength.",
+    "Add follow-up refinement chips ('Buat lebih ringkas', 'Tambah edge cases', 'Format JSON', 'Tone eksekutif', 'Jadikan teknis') + custom input field.",
+    "Include diff comparison view (Original vs Refined text), Markdown download, Copy prompt button, and session version history sidebar with restore functionality.",
+    "Support clear loading states with step-by-step AGI reasoning progress indicators, empty states with one-click sample prompts, and resilient error states.",
+    "All interactive elements MUST include data-testid attributes (kebab-case, role-based, e.g. data-testid='sharpen-prompt-button')."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "DO NOT use light mode or pure transparent background headers; maintain deep charcoal #0D1117 with glassmorphism backdrop-blur.",
+    "Ensure contrast is high between text (#F0F6FC) and background panels (#161B22).",
+    "Use Electric Lime (#84CC16) strictly for accents, active states, key CTAs, and glowing highlights.",
+    "Never use generic centered layouts or marketing heroes. Keep the workspace accessible immediately upon load.",
+    "Add micro-interactions, smooth hover transitions, and keyboard shortcuts (e.g. Cmd+Enter / Ctrl+Enter to sharpen).",
+    "Ensure all interactive items have data-testid attributes for testing."
+  ]
+}
