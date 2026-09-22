@@ -165,50 +165,72 @@ class TestRSISelectedPolicyChangesParent:
 
 
 class TestRSIMalformedEvaluator:
-    def test_bad_evaluator_json_raises_ai_bad_evaluation(self):
-        script = [
-            _cand_json("A"), "not json at all",
-        ]
-        source, _ = make_source(script)
-        with pytest.raises(HTTPException) as exc:
-            asyncio.run(_collect(automatic_rsi(
-                system="SYS", user="USER", history=[], current_policy="parallel_refine",
-                session_id=uuid.uuid4(), source=source, parse_result=parse_result,
-                extract_json=extract_json, partial_prompt=partial,
-            )))
-        assert exc.value.detail == "AI_BAD_EVALUATION"
-        assert exc.value.status_code == 502
+    def test_unreadable_evaluator_retries_then_degrades(self):
+        script = []
+        for letter in "ABCD":
+            script += [_cand_json(letter), "not json at all", "still not json"]
+        source, counter = make_source(script)
+        events = asyncio.run(_collect(automatic_rsi(
+            system="SYS", user="USER", history=[], current_policy="parallel_refine",
+            session_id=uuid.uuid4(), source=source, parse_result=parse_result,
+            extract_json=extract_json, partial_prompt=partial,
+        )))
+        result = next(e["data"] for e in events if e["type"] == "result")
+        r = result["rsi"]
+        assert r["degraded_evaluations"] == [n["id"] for n in r["world"]["nodes"]]
+        assert r["constraints_flagged"] is False
+        assert all(n["score"] == 0.5 for n in r["world"]["nodes"])
+        assert result["final_prompt"]
+        assert any("machine-readable" in s for s in counter["systems"])
 
-    def test_evaluator_out_of_range_raises_ai_bad_evaluation(self):
-        script = [
-            _cand_json("A"), _eval_json(clarity=9),  # 9 > 5, ValidationError
-        ]
+    def test_evaluator_out_of_range_is_clamped(self):
+        script = []
+        for letter in "ABCD":
+            script += [_cand_json(letter), _eval_json(clarity=9)]
         source, _ = make_source(script)
-        with pytest.raises(HTTPException) as exc:
-            asyncio.run(_collect(automatic_rsi(
-                system="SYS", user="USER", history=[], current_policy="parallel_refine",
-                session_id=uuid.uuid4(), source=source, parse_result=parse_result,
-                extract_json=extract_json, partial_prompt=partial,
-            )))
-        assert exc.value.detail == "AI_BAD_EVALUATION"
+        events = asyncio.run(_collect(automatic_rsi(
+            system="SYS", user="USER", history=[], current_policy="parallel_refine",
+            session_id=uuid.uuid4(), source=source, parse_result=parse_result,
+            extract_json=extract_json, partial_prompt=partial,
+        )))
+        r = next(e["data"] for e in events if e["type"] == "result")["rsi"]
+        assert r["selected_score"] == 1.0
+        assert r["degraded_evaluations"] == []
+
+    def test_messy_evaluator_shapes_are_accepted(self):
+        messy = ('<think>hmm</think>\n{"clarity":"4","intent":4,"constraint_fidelity":"5/5",'
+                 '"usability":4,"constraints_preserved":"yes","violations":"none","summary":"kuat"}')
+        script = []
+        for letter in "ABCD":
+            script += [_cand_json(letter), messy]
+        source, _ = make_source(script)
+        events = asyncio.run(_collect(automatic_rsi(
+            system="SYS", user="USER", history=[], current_policy="parallel_refine",
+            session_id=uuid.uuid4(), source=source, parse_result=parse_result,
+            extract_json=extract_json, partial_prompt=partial,
+        )))
+        r = next(e["data"] for e in events if e["type"] == "result")["rsi"]
+        assert r["selected_score"] == 0.85
+        assert r["degraded_evaluations"] == []
 
 
 class TestRSIAllConstraintsFailed:
-    def test_no_passing_candidate_raises(self):
+    def test_no_passing_candidate_still_returns_flagged_result(self):
         script = [
             _cand_json("A"), _eval_json(preserved=False, violations=["bad"]),
-            _cand_json("B"), _eval_json(preserved=True, violations=["x"]),  # non-empty violations => score 0 but valid list; considered invalid
+            _cand_json("B"), _eval_json(preserved=True, violations=["x"]),
             _cand_json("C"), _eval_json(preserved=False),
             _cand_json("D"), _eval_json(preserved=False, violations=["y"]),
         ]
         source, _ = make_source(script)
-        with pytest.raises(HTTPException) as exc:
-            asyncio.run(_collect(automatic_rsi(
-                system="SYS", user="USER", history=[], current_policy="parallel_refine",
-                session_id=uuid.uuid4(), source=source, parse_result=parse_result,
-                extract_json=extract_json, partial_prompt=partial,
-            )))
-        assert exc.value.detail == "RSI_CONSTRAINTS_FAILED"
+        events = asyncio.run(_collect(automatic_rsi(
+            system="SYS", user="USER", history=[], current_policy="parallel_refine",
+            session_id=uuid.uuid4(), source=source, parse_result=parse_result,
+            extract_json=extract_json, partial_prompt=partial,
+        )))
+        result = next(e["data"] for e in events if e["type"] == "result")
+        assert result["rsi"]["constraints_flagged"] is True
+        assert result["final_prompt"]
 
 
 class TestRSIBadCandidateJSON:

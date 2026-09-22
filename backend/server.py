@@ -307,6 +307,15 @@ def _build_response(raw: str, used_model: str) -> ProcessResponse:
     )
 
 
+def _llm_failure(exc: Exception) -> HTTPException:
+    text = str(exc)
+    if "Budget has been exceeded" in text or "insufficient_quota" in text:
+        return HTTPException(status_code=502, detail="AI_QUOTA_EXCEEDED")
+    if "RateLimitError" in text or "rate_limit" in text:
+        return HTTPException(status_code=502, detail="AI_RATE_LIMITED")
+    return HTTPException(status_code=502, detail="AI_REQUEST_FAILED")
+
+
 async def _rsi_events(req: ProcessRequest, custom: Optional[ProviderConfig]):
     used_model = custom.model.strip() if custom else LLM_MODEL
 
@@ -349,8 +358,8 @@ async def process_prompt(req: ProcessRequest):
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("RSI request failed: %s", type(exc).__name__)
-        raise HTTPException(status_code=502, detail="AI_REQUEST_FAILED")
+        logger.error("RSI request failed: %s: %s", type(exc).__name__, str(exc)[:300])
+        raise _llm_failure(exc)
     raise HTTPException(status_code=502, detail="AI_BAD_RESPONSE")
 
 
@@ -373,8 +382,8 @@ async def stream_prompt(req: ProcessRequest):
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            logger.error("RSI stream failed: %s", type(exc).__name__)
-            yield sse({"type": "error", "code": "AI_REQUEST_FAILED"})
+            logger.error("RSI stream failed: %s: %s", type(exc).__name__, str(exc)[:300])
+            yield sse({"type": "error", "code": str(_llm_failure(exc).detail)})
 
     return StreamingResponse(
         generator(), media_type="text/event-stream",

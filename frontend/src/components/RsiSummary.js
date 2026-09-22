@@ -6,6 +6,12 @@ export const RsiSummary = ({ report, t, policies }) => !report ? null : (
     <p data-testid="rsi-run-stats" className="text-xs text-[#F0F6FC]">{report.candidate_count} {t.candidates} · {report.actual_llm_calls}/{report.max_llm_calls} {t.calls}</p>
     <p data-testid="rsi-selected-policy" className="text-xs text-[#8B949E]">{t.applied}: {policies[report.selected_policy]} · {t.worlds}: {report.replay_world_count}</p>
     <p data-testid="rsi-scores" className="text-xs text-[#8B949E]">{t.score}: {report.initial_score.toFixed(2)} → {report.selected_score.toFixed(2)} · {t.selected} {report.selected_candidate.toUpperCase()}</p>
+    {report.degraded_evaluations?.length ? (
+      <p data-testid="rsi-degraded-note" className="text-xs text-[#FBBF24] leading-relaxed">{t.degraded}: {report.degraded_evaluations.map((id) => id.toUpperCase()).join(", ")}</p>
+    ) : null}
+    {report.constraints_flagged ? (
+      <p data-testid="rsi-constraints-note" className="text-xs text-[#FBBF24] leading-relaxed">{t.constraintsFlagged}</p>
+    ) : null}
     <p data-testid="rsi-disclaimer" className="text-xs text-[#8B949E] leading-relaxed">{t.disclaimer}</p>
     <details data-testid="rsi-evaluations"><summary data-testid="rsi-evaluations-toggle" className="cursor-pointer text-xs text-[#84CC16]">{t.details}</summary>
       <ul className="mt-2 space-y-2">{report.evaluations.map((e) => (

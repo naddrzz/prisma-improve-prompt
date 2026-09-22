@@ -106,7 +106,7 @@ export const ResultPanel = ({
           <div className="flex items-center justify-between gap-2">
             <p data-testid="rsi-progress" role="status" className="text-xs font-mono text-[#84CC16] flex items-center gap-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {rsiStatus ? `${t.rsi.stages[rsiStatus.stage]}${rsiStatus.candidate ? ` ${rsiStatus.candidate}/4` : ""} · ${rsiStatus.calls}/${rsiStatus.max_calls}` : t.sharpening}
+              {rsiStatus ? `${t.rsi.stages[rsiStatus.stage]}${rsiStatus.candidate ? ` ${rsiStatus.candidate}/4` : ""} · ${t.rsi.calls} ${rsiStatus.calls}/${rsiStatus.max_calls}` : t.sharpening}
             </p>
             <button data-testid="stop-generation-button" onClick={onStop} className="shrink-0 text-xs border border-[#30363D] px-3 py-1.5 rounded-lg text-[#FBBF24] hover:border-[#FBBF24] transition-colors">{t.rsi.stop}</button>
           </div>
