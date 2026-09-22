@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="13" time="69.263" timestamp="2026-09-22T06:18:26.409424+00:00" hostname="agent-env-ef8fbd20-5375-48fb-a707-6385e566a9aa"><testcase classname="tests.test_prisma_new_features.TestProviderEndpoint" name="test_invalid_base_url" time="0.235" /><testcase classname="tests.test_prisma_new_features.TestAutoLanguage" name="test_auto_english_input_produces_english" time="16.159" /><testcase classname="tests.test_prisma_new_features.TestProviderEndpoint" name="test_incomplete_missing_model" time="0.065" /><testcase classname="tests.test_prisma_new_features.TestProviderEndpoint" name="test_incomplete_missing_base_url" time="0.064" /><testcase classname="tests.test_prisma_new_features.TestProviderEndpoint" name="test_unauthorized" time="0.641"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">/root/.venv/lib/python3.11/site-packages/requests/models.py:1116: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:355: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+tests/test_prisma_new_features.py:124: in test_unauthorized
+    assert r.json()["detail"] == "PROVIDER_UNAUTHORIZED"
+           ^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/models.py:1120: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="tests.test_prisma_new_features.TestProcessWithProvider" name="test_invalid_base_url_no_fallback" time="0.064" /><testcase classname="tests.test_prisma_new_features.TestProcessWithProvider" name="test_provider_null_uses_default" time="10.909" /><testcase classname="tests.test_prisma_new_features.TestProcessWithProvider" name="test_provider_omitted_uses_default" time="10.544" /><testcase classname="tests.test_prisma_new_features.TestAutoLanguage" name="test_auto_indonesian_input_produces_indonesian" time="18.747" /><testcase classname="tests.test_prisma_new_features.TestConfigCustomProviderFlag" name="test_supports_custom_provider_true" time="0.081" /><testcase classname="tests.test_prisma_new_features.TestNoApiKeyLeak" name="test_no_sk_in_backend_logs" time="0.040" /><testcase classname="tests.test_prisma_new_features.TestAutoLanguage" name="test_explicit_en_overrides" time="14.945" /><testcase classname="tests.test_prisma_new_features.TestAutoLanguage" name="test_explicit_id_overrides" time="18.526" /></testsuite></testsuites>
