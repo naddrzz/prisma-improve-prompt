@@ -1,5 +1,33 @@
 # Dream-RSI → Prisma: analisis dan artefak implementasi
 
+## Status terkini: otomatis sejak generate pertama
+
+Permintaan terbaru pengguna: Dream-RSI harus tertanam pada sistem dan system prompt, bukan menunggu penilaian manual di Replay Lab. Implementasi saat ini menjalankan pipeline **otomatis** pada `POST /api/prompt/stream` dan `/api/prompt/process`, untuk Improve, Refactor, dan Brainstorm, termasuk permintaan pertama dengan riwayat kosong.
+
+1. Buat kandidat A, nilai dengan evaluator AI tetap.
+2. Lanjutkan A menjadi B menggunakan diagnostik evaluasi, lalu nilai B.
+3. Buka cabang independen C dan nilai C.
+4. Bekukan pohon A→B dan akar C, gabungkan maksimal tiga world sesi sebelumnya untuk tugas/config yang sama, lalu bandingkan preset lewat Persamaan (1). Replay memakai K₂=2 agar urutan alokasi pada budget kecil dapat dibedakan; ties mempertahankan incumbent.
+5. Terapkan preset terpilih pada aksi legal pohon online: lanjutkan frontier atau buka akar baru D, lalu evaluasi. Replay **tidak membatasi** aksi online hanya pada anak historis; outcome baru benar-benar dihasilkan melalui provider.
+6. Pilih kandidat dengan skor AI tertinggi di antara yang lolos pemeriksaan batasan. Kandidat awal ikut dibandingkan; hasil yang lebih buruk tidak otomatis menggantikannya. Jika semuanya gagal pemeriksaan, tampilkan error dan pertahankan hasil terakhir.
+
+Batas aplikasi: maksimal **4 generasi + 4 evaluasi = 8 panggilan tahap AI**, deadline total 240 detik, tiap panggilan maksimal 120 detik. Ini lebih mahal/lama dari single-pass. Angka panggilan menghitung tahap aplikasi, bukan retry internal SDK atau biaya token/tagihan. Tombol Hentikan membatalkan fetch dan membatalkan pipeline server saat disconnect. Semua kandidat di-stream sebagai kandidat sementara; hanya hasil terpilih menjadi versi final.
+
+Artefak baru: `backend/rsi.py` (orkestrator/evaluator tetap), tambahan protokol di `backend/prompts.py`, `RsiSummary.js`, SSE `status`/`reset`, dan histori RSI tiga world terakhir di memori React. Node replay otomatis terpisah dari rating manual Replay Lab. **Pengguna tidak perlu memberi rating atau membuka Replay Lab untuk mengaktifkan RSI.**
+
+Ini tetap **adaptasi bounded Dream-RSI**, bukan reproduksi penuh: preset dipilih, bukan kode policy ditulis ulang oleh LLM; langkah live berikutnya melanjutkan pohon request yang sama, bukan rollout baru penuh. Evaluator AI adalah proksi kualitas prompt, bukan evaluator eksekusi domain paper. Tidak ada training bobot, DB, atau klaim peningkatan pada dunia nyata.
+
+### Kontrak tambahan endpoint generasi
+
+`session_id` (UUID, dibuat server bila tidak dikirim), `rsi_history` (maksimal 3 `ReplayWorld`), dan `rsi_policy` (incumbent preset) opsional; **pipeline selalu otomatis** walau ketiganya tidak diberikan. Frontend hanya mengirim histori dengan identitas tugas/config yang sesuai. Setiap tahap provider memakai ID sesi ber-suffix request/node/stage agar percakapan kandidat dan evaluator terisolasi.
+
+Respons `result.data.rsi` memuat kandidat/skor, ID kandidat terpilih, evaluator `prisma-rubric-v1`, world baru, jumlah panggilan, incumbent comparison, preset terpilih, `online_action`, dan `online_applied: true`. `actual_llm_calls` di endpoint replay manual tetap 0; **jangan keliru menyebut seluruh pipeline otomatis gratis**.
+
+Evaluator memberi empat nilai 0–5 (clarity, intent, constraint_fidelity, usability), rata-rata dinormalisasi ke [0,1]. Jika `constraints_preserved=false` atau daftar pelanggaran tidak kosong, skor menjadi 0 dan kandidat tidak eligible sebagai hasil akhir. Rubrik dan kode evaluator tetap selama semua tahap; temperature evaluator 0. Pemeriksaan ini bukan jaminan semantik sempurna.
+
+SSE: `status` memperlihatkan generate/evaluate/replay/select dan anggaran; `reset` menghapus teks kandidat sebelumnya; `delta` mengalirkan kandidat aktual; `result` mengandung hasil terpilih lengkap; `error` mempertahankan hasil lama. Kandidat terakhir yang terlihat saat streaming tidak harus menjadi pemenang.
+
+
 ## 1. Sumber dan batas kepercayaan
 
 Dokumen yang dianalisis: **Dream-RSI: Recursive Self-Improvement through Evolving Worlds**, 36 halaman. Penulis: Tong Zheng, Xidong Wu, Zheng Zhang, Zhankui He, Chaoyi Zhang, Benjamin Coleman, Ruoqiao Wei, Di Bai, Haolin Liu, Rui Liu, Xue Wang, Yue Zhuan, Wang-Cheng Kang, Renkai Xiang, Heng Huang, Xinwu Cheng, dan Yunsong Guo. Afiliasi pada halaman 1: Google, University of Maryland College Park, Google DeepMind, University of Virginia.
@@ -77,7 +105,7 @@ Lampiran A menetapkan evaluator domain: Lasso dengan pemeriksaan nilai objective
 
 | Konsep paper | Komponen sistem | Artefak / status |
 |---|---|---|
-| Fixed discovery agent | `backend/server.py`, `prompts.py`, provider Claude/custom yang sudah ada | Dipertahankan; tidak ada training, provider baru, atau perubahan system prompt |
+| Fixed discovery agent | `backend/server.py`, `prompts.py`, provider Claude/custom yang sudah ada | Provider tetap; protokol RSI ditambahkan ke system prompt. Orkestrator `rsi.py` memisahkan generasi, evaluasi, replay dan langkah live |
 | Online artifact dan snapshot | `frontend/src/pages/Studio.js`, `lib/replay.js` | Setiap hasil SSE lengkap merekam ID, parent, world, input/konteks/settings, instruksi, hasil, timestamp di memori |
 | Discovery tree | Metadata versi sesi | Input/settings/provider berbeda memisahkan world; refine dari leaf yang identik melanjutkan parent; fork versi internal/draf edit menjadi world baru |
 | Fixed evaluator | Rating versi tersimpan pada `ReplayLab.js` | Rubrik manual 0–5, dinormalisasi /5. **Adaptasi produk**, bukan evaluator otomatis paper; dibekukan pada tiap request |

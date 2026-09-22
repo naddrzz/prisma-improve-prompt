@@ -9,7 +9,7 @@ export const fetchConfig = async () => {
 
 export const processPrompt = async (payload) => {
   try {
-    const { data } = await axios.post(`${API}/prompt/process`, payload, { timeout: 130000 });
+    const { data } = await axios.post(`${API}/prompt/process`, payload, { timeout: 250000 });
     return data;
   } catch (err) {
     const code = err?.response?.data?.detail;
@@ -17,11 +17,12 @@ export const processPrompt = async (payload) => {
   }
 };
 
-export const streamPrompt = async (payload, { onDelta, onResult }) => {
+export const streamPrompt = async (payload, { onDelta, onResult, onReset, onStatus, signal }) => {
   const res = await fetch(`${API}/prompt/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+    signal,
   });
 
   if (!res.ok || !res.body) {
@@ -39,20 +40,27 @@ export const streamPrompt = async (payload, { onDelta, onResult }) => {
   const decoder = new TextDecoder();
   let buffer = "";
 
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const frames = buffer.split("\n\n");
-    buffer = frames.pop();
-    for (const frame of frames) {
-      const line = frame.split("\n").find((l) => l.startsWith("data: "));
-      if (!line) continue;
-      const msg = JSON.parse(line.slice(6));
-      if (msg.type === "delta") onDelta(msg.text);
-      else if (msg.type === "result") onResult(msg.data);
-      else if (msg.type === "error") throw new Error(msg.code);
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split("\n\n");
+      buffer = frames.pop();
+      for (const frame of frames) {
+        const line = frame.split("\n").find((l) => l.startsWith("data: "));
+        if (!line) continue;
+        const msg = JSON.parse(line.slice(6));
+        if (msg.type === "delta") onDelta(msg.text);
+        else if (msg.type === "reset") onReset?.();
+        else if (msg.type === "status") onStatus?.(msg);
+        else if (msg.type === "result") onResult(msg.data);
+        else if (msg.type === "error") throw new Error(msg.code);
+      }
     }
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
   }
 };
 

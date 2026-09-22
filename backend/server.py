@@ -14,7 +14,8 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 
 from prompts import build_system_message
-from replay import router as replay_router
+from replay import router as replay_router, ReplayWorld, Policy
+from rsi import automatic_rsi, MAX_LLM_CALLS, TOTAL_TIMEOUT
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -63,6 +64,9 @@ class ProcessRequest(BaseModel):
     instruction: str = ""
     current_result: str = ""
     provider: Optional[ProviderConfig] = None
+    session_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    rsi_history: List[ReplayWorld] = Field(default_factory=list, max_length=3)
+    rsi_policy: Policy = "parallel_refine"
 
 
 class Direction(BaseModel):
@@ -82,6 +86,7 @@ class ProcessResponse(BaseModel):
     directions: List[Direction] = Field(default_factory=list)
     recommended_index: Optional[int] = None
     model: str = LLM_MODEL
+    rsi: Optional[dict] = None
 
 
 def _extract_json(raw: str) -> dict:
@@ -132,6 +137,9 @@ async def get_config():
         "max_prompt_chars": MAX_PROMPT_CHARS,
         "max_context_chars": MAX_CONTEXT_CHARS,
         "supports_custom_provider": True,
+        "automatic_rsi": True,
+        "rsi_max_llm_calls": MAX_LLM_CALLS,
+        "rsi_timeout_seconds": TOTAL_TIMEOUT,
     }
 
 
@@ -142,7 +150,7 @@ def _chat_url(base_url: str) -> str:
     return f"{base}/chat/completions"
 
 
-def _provider_request(system: str, user: str, cfg: ProviderConfig, stream: bool):
+def _provider_request(system: str, user: str, cfg: ProviderConfig, stream: bool, max_tokens: int = 8000, temperature: float = 0.7):
     if not cfg.base_url.strip().startswith(("http://", "https://")):
         raise HTTPException(status_code=422, detail="INVALID_BASE_URL")
     headers = {"Content-Type": "application/json"}
@@ -154,8 +162,8 @@ def _provider_request(system: str, user: str, cfg: ProviderConfig, stream: bool)
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        "temperature": 0.7,
-        "max_tokens": 8000,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
     }
     if stream:
         payload["stream"] = True
@@ -187,8 +195,8 @@ async def _call_openai_compatible(system: str, user: str, cfg: ProviderConfig) -
         raise HTTPException(status_code=502, detail="PROVIDER_BAD_RESPONSE")
 
 
-async def _stream_openai_compatible(system: str, user: str, cfg: ProviderConfig):
-    url, headers, payload = _provider_request(system, user, cfg, stream=True)
+async def _stream_openai_compatible(system: str, user: str, cfg: ProviderConfig, max_tokens: int = 8000, temperature: float = 0.7):
+    url, headers, payload = _provider_request(system, user, cfg, stream=True, max_tokens=max_tokens, temperature=temperature)
 
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as http:
         async with http.stream("POST", url, headers=headers, json=payload) as resp:
@@ -299,91 +307,77 @@ def _build_response(raw: str, used_model: str) -> ProcessResponse:
     )
 
 
+async def _rsi_events(req: ProcessRequest, custom: Optional[ProviderConfig]):
+    used_model = custom.model.strip() if custom else LLM_MODEL
+
+    async def source(system, user, phase_id, max_tokens, temperature):
+        async with asyncio.timeout(REQUEST_TIMEOUT):
+            if custom:
+                async for delta in _stream_openai_compatible(system, user, custom, max_tokens, temperature):
+                    yield delta
+                return
+            from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
+            chat = LlmChat(
+                api_key=LLM_KEY, session_id=f"{req.session_id}-{phase_id}", system_message=system,
+            ).with_model(LLM_PROVIDER, LLM_MODEL).with_params(max_tokens=max_tokens, temperature=temperature)
+            async for event in chat.stream_message(UserMessage(text=user)):
+                if isinstance(event, TextDelta):
+                    yield event.content
+                elif isinstance(event, StreamDone):
+                    break
+
+    async with asyncio.timeout(TOTAL_TIMEOUT):
+        async for event in automatic_rsi(
+            system=build_system_message(req.mode, req.settings.model_dump()),
+            user=_build_user_message(req), history=req.rsi_history, current_policy=req.rsi_policy,
+            session_id=req.session_id, source=source,
+            parse_result=lambda raw: _build_response(raw, used_model).model_dump(exclude={"rsi"}),
+            extract_json=_extract_json, partial_prompt=_partial_final_prompt,
+        ):
+            yield event
+
+
 @api_router.post("/prompt/process", response_model=ProcessResponse)
 async def process_prompt(req: ProcessRequest):
     custom = _validate(req)
-    system_message = build_system_message(req.mode, req.settings.model_dump())
-    user_message = _build_user_message(req)
-    used_model = custom.model.strip() if custom else LLM_MODEL
-
-    if custom:
-        raw = await _call_openai_compatible(system_message, user_message, custom)
-    else:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-
-        chat = LlmChat(
-            api_key=LLM_KEY,
-            session_id=str(uuid.uuid4()),
-            system_message=system_message,
-        ).with_model(LLM_PROVIDER, LLM_MODEL).with_params(max_tokens=8000)
-
-        try:
-            raw = await asyncio.wait_for(
-                chat.send_message(UserMessage(text=user_message)),
-                timeout=REQUEST_TIMEOUT,
-            )
-        except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="AI_TIMEOUT")
-        except Exception as exc:
-            logger.error("LLM request failed: %s", type(exc).__name__)
-            raise HTTPException(status_code=502, detail="AI_REQUEST_FAILED")
-
-    return _build_response(raw, used_model)
+    try:
+        async for event in _rsi_events(req, custom):
+            if event["type"] == "result":
+                return ProcessResponse(**event["data"])
+    except (asyncio.TimeoutError, httpx.TimeoutException):
+        raise HTTPException(status_code=504, detail="AI_TIMEOUT")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("RSI request failed: %s", type(exc).__name__)
+        raise HTTPException(status_code=502, detail="AI_REQUEST_FAILED")
+    raise HTTPException(status_code=502, detail="AI_BAD_RESPONSE")
 
 
 @api_router.post("/prompt/stream")
 async def stream_prompt(req: ProcessRequest):
-    """Server-sent events: streams the final prompt as it is generated, then the full structured result."""
+    """Automatic RSI is the default from the first request; stream live candidates."""
     custom = _validate(req)
-    system_message = build_system_message(req.mode, req.settings.model_dump())
-    user_message = _build_user_message(req)
-    used_model = custom.model.strip() if custom else LLM_MODEL
 
     def sse(obj: dict) -> str:
         return f"data: {json.dumps(obj, ensure_ascii=False)}\n\n"
 
-    async def source():
-        if custom:
-            async for delta in _stream_openai_compatible(system_message, user_message, custom):
-                yield delta
-            return
-
-        from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
-
-        chat = LlmChat(
-            api_key=LLM_KEY,
-            session_id=str(uuid.uuid4()),
-            system_message=system_message,
-        ).with_model(LLM_PROVIDER, LLM_MODEL).with_params(max_tokens=8000)
-
-        async for event in chat.stream_message(UserMessage(text=user_message)):
-            if isinstance(event, TextDelta):
-                yield event.content
-            elif isinstance(event, StreamDone):
-                break
-
     async def generator():
-        buffer, sent = "", 0
         try:
-            async for delta in source():
-                buffer += delta
-                visible = _partial_final_prompt(buffer)
-                if len(visible) > sent:
-                    yield sse({"type": "delta", "text": visible[sent:]})
-                    sent = len(visible)
-            result = _build_response(buffer, used_model)
-            yield sse({"type": "result", "data": result.model_dump()})
+            async for event in _rsi_events(req, custom):
+                yield sse(event)
+        except (asyncio.TimeoutError, httpx.TimeoutException):
+            yield sse({"type": "error", "code": "AI_TIMEOUT"})
         except HTTPException as exc:
             yield sse({"type": "error", "code": str(exc.detail)})
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            logger.error("Stream failed: %s", type(exc).__name__)
+            logger.error("RSI stream failed: %s", type(exc).__name__)
             yield sse({"type": "error", "code": "AI_REQUEST_FAILED"})
 
     return StreamingResponse(
-        generator(),
-        media_type="text/event-stream",
+        generator(), media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
     )
 

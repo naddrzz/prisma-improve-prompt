@@ -114,7 +114,16 @@ export const STRINGS = {
     retry: "Coba lagi",
     configTitle: "Konfigurasi diperlukan",
     configBody: "Kredensial model bahasa belum tersedia di server. Antarmuka tetap dapat digunakan, tetapi pemrosesan AI dinonaktifkan hingga kunci dikonfigurasi.",
+    rsi: {
+      automaticHint: "Dream-RSI otomatis sejak generate pertama · maksimal 4 kandidat + 4 evaluasi AI. Lebih lama dan lebih banyak panggilan daripada satu generasi.",
+      stages: { generate: "Menulis kandidat", evaluate: "Mengevaluasi kandidat", replay: "Menguji strategi dari riwayat", select: "Memilih hasil terbaik" },
+      completed: "Dream-RSI otomatis selesai", candidates: "kandidat", calls: "panggilan AI", stop: "Hentikan", stopped: "Proses dihentikan; input dan hasil terakhir tetap tersimpan.",
+      applied: "Strategi diterapkan", worlds: "Jejak replay", score: "Skor AI awal → terpilih", selected: "Kandidat", details: "Lihat evaluasi kandidat",
+      disclaimer: "Evaluasi oleh AI adalah proksi, bukan bukti hasil eksekusi. Replay tidak memanggil LLM; strategi terpilih digunakan untuk langkah online berikutnya. Ini adaptasi terbatas, bukan perubahan bobot model atau penulisan ulang kode otonom.",
+    },
     errors: {
+      AI_BAD_EVALUATION: "Evaluasi AI tidak dapat dibaca. Hasil lama tetap aman; coba lagi.",
+      RSI_CONSTRAINTS_FAILED: "Belum ada kandidat yang lolos pemeriksaan batasan oleh AI. Perjelas input atau coba lagi.",
       AI_NOT_CONFIGURED: "Kredensial AI belum dikonfigurasi di server.",
       PROMPT_TOO_SHORT: "Prompt terlalu pendek. Tulis minimal beberapa kata.",
       PROMPT_TOO_LONG: "Prompt terlalu panjang. Maksimal 12.000 karakter.",
@@ -249,7 +258,16 @@ export const STRINGS = {
     retry: "Retry",
     configTitle: "Configuration required",
     configBody: "Language-model credentials are not available on the server. The interface stays usable, but AI processing is disabled until a key is configured.",
+    rsi: {
+      automaticHint: "Automatic Dream-RSI from the first generation · up to 4 candidates + 4 AI evaluations. Takes longer and uses more calls than a single generation.",
+      stages: { generate: "Writing candidate", evaluate: "Evaluating candidate", replay: "Replaying historical strategies", select: "Selecting best result" },
+      completed: "Automatic Dream-RSI complete", candidates: "candidates", calls: "AI calls", stop: "Stop", stopped: "Stopped; your input and last result are preserved.",
+      applied: "Applied strategy", worlds: "Replay traces", score: "Initial → selected AI score", selected: "Candidate", details: "Show candidate evaluations",
+      disclaimer: "AI evaluation is a proxy, not evidence of downstream execution. Replay makes no LLM calls; its selected strategy controls the next online step. This is a bounded adaptation, not model training or autonomous code rewriting.",
+    },
     errors: {
+      AI_BAD_EVALUATION: "AI evaluation could not be parsed. Your last result is preserved; try again.",
+      RSI_CONSTRAINTS_FAILED: "No candidate passed the AI constraint check. Clarify the input or try again.",
       AI_NOT_CONFIGURED: "AI credentials are not configured on the server.",
       PROMPT_TOO_SHORT: "Prompt is too short. Write at least a few words.",
       PROMPT_TOO_LONG: "Prompt is too long. Maximum 12,000 characters.",

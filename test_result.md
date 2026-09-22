@@ -103,7 +103,7 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Analyze dream-rsi.pdf thoroughly and apply its methods to Prisma. User approved a practical implementation with in-memory sessions, existing providers, and no further clarification.
+  Analyze dream-rsi.pdf thoroughly and apply its methods to Prisma. User approved a practical implementation with in-memory sessions, existing providers, and no further clarification. Latest priority: "terkait RSI ini, dream-rsi ini sudah otomatis digunakan ketika awal generate prompt, jadi sudah ditanam pada system prompt dan system. Improve kan!" Automatic pipeline is now mandatory from first generation, not just manual replay.
 backend:
   - task: "Dream-RSI bounded historical replay"
     implemented: true

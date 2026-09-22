@@ -6,6 +6,7 @@ import {
 import { BrainstormDirections } from "@/components/BrainstormDirections";
 import { ClarifyingQuestions } from "@/components/ClarifyingQuestions";
 import { StreamingPrompt } from "@/components/StreamingPrompt";
+import { RsiSummary } from "@/components/RsiSummary";
 
 const CHIP_KEYS = [
   { key: "shorter", id: "Buat prompt ini lebih ringkas tanpa menghilangkan batasan yang sudah diterima.", en: "Make this prompt shorter without dropping any already-accepted constraint." },
@@ -29,7 +30,7 @@ const Block = ({ icon: Icon, title, items, color, testid }) =>
   );
 
 export const ResultPanel = ({
-  t, uiLang, result, draft, setDraft, loading, streamText, error, onRetry, aiConfigured,
+  t, uiLang, result, draft, setDraft, loading, streamText, rsiStatus, onStop, error, onRetry, aiConfigured,
   onRefine, onSample, onCompare, selectedDirections, toggleDirection, onUseDirection,
   onCombineDirections, onAnswerQuestions, onSkipQuestions,
 }) => {
@@ -102,10 +103,13 @@ export const ResultPanel = ({
       {loading && (
         <div data-testid="loading-state" className="flex flex-col gap-3 pz-rise">
           <div className="relative h-0.5 w-full bg-[#21262D] overflow-hidden rounded-full pz-sweep" />
-          <p className="text-xs font-mono text-[#84CC16] flex items-center gap-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {streamText ? t.streaming : t.sharpening}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p data-testid="rsi-progress" role="status" className="text-xs font-mono text-[#84CC16] flex items-center gap-2">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {rsiStatus ? `${t.rsi.stages[rsiStatus.stage]}${rsiStatus.candidate ? ` ${rsiStatus.candidate}/4` : ""} · ${rsiStatus.calls}/${rsiStatus.max_calls}` : t.sharpening}
+            </p>
+            <button data-testid="stop-generation-button" onClick={onStop} className="shrink-0 text-xs border border-[#30363D] px-3 py-1.5 rounded-lg text-[#FBBF24] hover:border-[#FBBF24] transition-colors">{t.rsi.stop}</button>
+          </div>
           {streamText ? (
             <StreamingPrompt text={streamText} />
           ) : (
@@ -131,6 +135,7 @@ export const ResultPanel = ({
 
       {result && (
         <div className="flex flex-col gap-4 pz-rise">
+          <RsiSummary report={result.rsi} t={t.rsi} policies={t.replay.policies} />
           <ClarifyingQuestions t={t} questions={result.clarifying_questions} onSubmit={onAnswerQuestions} onSkip={onSkipQuestions} />
 
           <BrainstormDirections

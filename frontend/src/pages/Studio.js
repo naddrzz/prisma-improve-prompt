@@ -8,7 +8,7 @@ import { CompareDialog } from "@/components/CompareDialog";
 import { useT } from "@/lib/i18n";
 import { fetchConfig, streamPrompt } from "@/lib/api";
 import { ReplayLab } from "@/components/ReplayLab";
-import { recordVersion } from "@/lib/replay";
+import { recordVersion, requestKey } from "@/lib/replay";
 
 const DEFAULT_LIMITS = { max_prompt_chars: 12000, max_context_chars: 6000 };
 
@@ -38,6 +38,9 @@ export default function Studio() {
 
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const runningRef = useRef(false);
+  const abortRef = useRef(null);
+  const [rsiHistory, setRsiHistory] = useState([]);
+  const [rsiStatus, setRsiStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [streamText, setStreamText] = useState("");
   const [error, setError] = useState(null);
@@ -50,6 +53,8 @@ export default function Studio() {
       .then(setConfig)
       .catch(() => setConfig((c) => ({ ...c, ai_configured: false })));
   }, []);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const toggleLang = () => {
     const next = uiLang === "id" ? "en" : "id";
@@ -66,13 +71,24 @@ export default function Studio() {
       if (runningRef.current) return;
       runningRef.current = true;
       setLoading(true);
+      setRsiStatus(null);
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const key = requestKey(payload);
+      const prior = rsiHistory.filter((entry) => entry.key === key);
       setError(null);
       setStreamText("");
       setLastPayload({ payload, label, parentId });
       let streamed = "";
       try {
         let data = null;
-        await streamPrompt(payload, {
+        await streamPrompt({ ...payload, session_id: sessionId,
+          rsi_history: prior.map((entry) => entry.world),
+          rsi_policy: prior.length ? prior[prior.length - 1].policy : "parallel_refine",
+        }, {
+          signal: controller.signal,
+          onStatus: setRsiStatus,
+          onReset: () => { streamed = ""; setStreamText(""); },
           onDelta: (text) => {
             streamed += text;
             setStreamText(streamed);
@@ -82,6 +98,7 @@ export default function Studio() {
           },
         });
         if (!data) throw new Error("AI_BAD_RESPONSE");
+        if (data.rsi?.world) setRsiHistory((items) => [...items, { key, world: data.rsi.world, policy: data.rsi.selected_policy }].slice(-3));
         setResult(data);
         setDraft(data.final_prompt);
         setSelectedDirections(
@@ -92,15 +109,20 @@ export default function Studio() {
         setActiveVersionId(version.id);
         toast.success(uiLang === "id" ? "Prompt diperbarui" : "Prompt updated");
       } catch (e) {
-        setError(e.message);
-        toast.error(t.errors[e.message] || t.errorTitle);
+        if (e.name === "AbortError") toast(t.rsi.stopped);
+        else {
+          setError(e.message);
+          toast.error(t.errors[e.message] || t.errorTitle);
+        }
       } finally {
         setStreamText("");
+        setRsiStatus(null);
+        abortRef.current = null;
         runningRef.current = false;
         setLoading(false);
       }
     },
-    [uiLang, t, versions, activeVersionId]
+    [uiLang, t, versions, activeVersionId, rsiHistory, sessionId]
   );
 
   const providerPayload = () =>
@@ -128,6 +150,7 @@ export default function Studio() {
   const clearAll = () => {
     if (runningRef.current) return;
     setSessionId(crypto.randomUUID());
+    setRsiHistory([]);
     setActiveVersionId(null);
     setLastPayload(null);
     setCompareOpen(false);
@@ -252,6 +275,8 @@ export default function Studio() {
             setDraft={setDraft}
             loading={loading}
             streamText={streamText}
+            rsiStatus={rsiStatus}
+            onStop={() => abortRef.current?.abort()}
             error={error}
             onRetry={retry}
             aiConfigured={canRun}

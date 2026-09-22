@@ -64,6 +64,7 @@ export const InputPanel = ({
         <Eraser className="h-4 w-4" />
       </button>
     </div>
+    <p data-testid="automatic-rsi-notice" className="text-xs text-[#84CC16] leading-relaxed">{t.rsi.automaticHint}</p>
     <p className="text-[10px] font-mono text-[#6E7681] flex items-center gap-1.5">
       <Info className="h-3 w-3" /> ⌘/Ctrl + Enter
     </p>
